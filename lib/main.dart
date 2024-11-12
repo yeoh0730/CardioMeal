@@ -36,10 +36,12 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      /*
       appBar: AppBar(
         title: Text('CardioMeal'),
         backgroundColor: Color.fromRGBO(244, 67, 54, 1),
-      ),
+      ),*/
+
       body: SafeArea(
         child: _pages[_currentIndex], // Display the selected page
       ),
@@ -47,6 +49,8 @@ class _HomeScreenState extends State<HomeScreen> {
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,
         currentIndex: _currentIndex,
+        selectedItemColor: Color.fromRGBO(244, 67, 54, 1),
+        unselectedItemColor: Colors.grey,
         onTap: (index) {
           setState(() {
             _currentIndex = index;
