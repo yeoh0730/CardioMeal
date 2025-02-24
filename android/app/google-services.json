@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "41799379453",
+    "project_id": "fyp-cardiomeal",
+    "storage_bucket": "fyp-cardiomeal.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:41799379453:android:0736586e3e4a4b84011194",
+        "android_client_info": {
+          "package_name": "com.example.project"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAliWV7VSDi6BbgnwlnITRb5ltiybP6Oaw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

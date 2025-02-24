@@ -1,10 +1,15 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:project/HomePage.dart';
 import 'package:project/DiaryPage.dart';
 import 'package:project/ProfilePage.dart';
 import 'package:project/RecipePage.dart';
+import 'LoginPage.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized(); // Ensure Flutter bindings are initialized
+  await Firebase.initializeApp(); // Initialize Firebase
   runApp(MyApp());
 }
 
@@ -12,7 +17,29 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: HomeScreen(),
+      debugShowCheckedModeBanner: false,
+      home: AuthenticationWrapper(),
+    );
+  }
+}
+
+// This checks if user is logged in or not
+class AuthenticationWrapper extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator()); // Show loading screen
+        }
+        if (snapshot.hasData) {
+          // Force navigation reset on login
+          return HomeScreen();
+        } else {
+          return LoginPage();
+        }
+      },
     );
   }
 }
@@ -36,12 +63,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      /*
-      appBar: AppBar(
-        title: Text('CardioMeal'),
-        backgroundColor: Color.fromRGBO(244, 67, 54, 1),
-      ),*/
-
       body: SafeArea(
         child: _pages[_currentIndex], // Display the selected page
       ),
