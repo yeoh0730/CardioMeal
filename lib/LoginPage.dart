@@ -47,7 +47,7 @@ class _LoginPageState extends State<LoginPage> {
                   SizedBox(height: 20),
                   Text("Welcome To CardioMeal", style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold,)),
                   SizedBox(height: 5),
-                  Text("sign in to access your accoount", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w100,)),
+                  Text("sign in to access your account.", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w100,)),
                   SizedBox(height: 40),
 
                   // Email TextField
