@@ -134,13 +134,13 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           children: [
             Image.asset('assets/logo.png', width: 250),
             SizedBox(height: 20),
-            Text("Welcome", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, fontFamily: 'Poppins')),
+            Text("Welcome", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold,)),
             SizedBox(height: 40),
             Align(
               alignment: Alignment.centerLeft, // Align text to the left
               child: Text(
                 "What can we call you?",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,),
               ),
             ),
             SizedBox(height: 15),
@@ -168,7 +168,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("How old are you?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, fontFamily: 'Poppins')),
+            Text("How old are you?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,)),
             SizedBox(height: 20),
             TextField(
               controller: _ageController,
@@ -195,7 +195,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("What is your gender?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, fontFamily: 'Poppins')),
+            Text("What is your gender?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,)),
             SizedBox(height: 20),
             DropdownButtonFormField<String>(
               value: _gender,
@@ -225,7 +225,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text("Do you have any dietary preference(s)?",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, fontFamily: 'Poppins')
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,)
             ),
             SizedBox(height: 20),
             _buildCheckbox("None"),

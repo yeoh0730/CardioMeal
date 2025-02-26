@@ -11,7 +11,8 @@ class ProfilePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('Profile'),
-        backgroundColor: Color.fromRGBO(244, 67, 54, 1),
+        elevation: 0,
+        backgroundColor: Colors.white,
         actions: [
           IconButton(
             icon: Icon(Icons.logout),
