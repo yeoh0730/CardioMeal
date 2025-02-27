@@ -1,7 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
+import 'services/api_service.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  List<dynamic> _recipes = []; // Store API response
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRecommendations(); // Fetch data when screen loads
+  }
+
+  Future<void> _fetchRecommendations() async {
+    try {
+      List<dynamic> recommendations = await ApiService.fetchRecommendations();
+      setState(() {
+        _recipes = recommendations;
+      });
+    } catch (error) {
+      print("Error fetching recommendations: $error");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -25,45 +50,32 @@ class HomePage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Today's Progress Header
+              // Today's Progress Section
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     "Today's Progress",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   TextButton(
                     onPressed: () {},
                     child: Text(
                       "View more",
-                      style: TextStyle(
-                        color: Colors.blue,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
               ),
-              // Today's Progress Card
+
+              // Nutrient Progress Cards
               Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      Column(
-                        children: [
-                          Image.asset('assets/logo.png', width: 100,), // Replace with actual asset
-                          SizedBox(height: 8),
-                        ],
-                      ),
                       CircularPercentIndicator(
                         radius: 40.0,
                         lineWidth: 8.0,
@@ -101,18 +113,20 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
               ),
+
               SizedBox(height: 20),
-              // Recommendations Section
+
+              // Recommendations Header
               Text(
                 "Recommendations",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black),
               ),
               SizedBox(height: 16),
-              GridView.builder(
+
+              // Show Loading Indicator While Fetching Data
+              _recipes.isEmpty
+                  ? Center(child: CircularProgressIndicator())
+                  : GridView.builder(
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -121,46 +135,45 @@ class HomePage extends StatelessWidget {
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
                 ),
-                itemCount: 8, // Change this to your list length
+                itemCount: _recipes.length,
                 itemBuilder: (context, index) {
+                  final recipe = _recipes[index];
+
+                  // 🔹 Debug: Print the image URL in console
+                  print("Recipe Image URL: ${recipe['Images']}");
+                  print("Recipe Image URL (Fixed): '${recipe['Images'].trim()}'");
+
+
                   return Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Stack(
                           children: [
                             ClipRRect(
-                              borderRadius: BorderRadius.vertical(
-                                top: Radius.circular(10),
-                              ),
-                              child: Image.asset(
-                                'assets/sandwich.jpg', // Replace with actual image asset
+                              borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+                              child: Image.network(
+                                recipe['Images'], // Display Image from API
                                 height: 120,
                                 width: double.infinity,
                                 fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Icon(Icons.broken_image, size: 100),
                               ),
                             ),
                             Positioned(
                               top: 8,
                               right: 8,
-                              child: Icon(
-                                Icons.favorite_border,
-                                color: Colors.white,
-                              ),
+                              child: Icon(Icons.favorite_border, color: Colors.white),
                             ),
                           ],
                         ),
                         Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Text(
-                            index % 2 == 0 ? "Pancake" : "Salad",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            recipe['Name'], // Display Recipe Name
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                         ),
                       ],
