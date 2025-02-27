@@ -13,7 +13,7 @@ class ApiService {
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "user_metrics": {
-          "Weight": 80,
+          "Weight": 70,
           "Height": 175,
           "Cholesterol": 210,
           "Systolic_BP": 125,

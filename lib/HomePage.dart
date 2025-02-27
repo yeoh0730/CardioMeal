@@ -140,7 +140,6 @@ class _HomePageState extends State<HomePage> {
                   final recipe = _recipes[index];
 
                   // 🔹 Debug: Print the image URL in console
-                  print("Recipe Image URL: ${recipe['Images']}");
                   print("Recipe Image URL (Fixed): '${recipe['Images'].trim()}'");
 
 

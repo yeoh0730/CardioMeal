@@ -15,6 +15,13 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
 
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
+  final TextEditingController _heightController = TextEditingController();
+  final TextEditingController _weightController = TextEditingController();
+  final TextEditingController _cholesterolController = TextEditingController();
+  final TextEditingController _systolicBPController = TextEditingController();
+  final TextEditingController _diastolicBPController = TextEditingController();
+  final TextEditingController _bloodGlucoseController = TextEditingController();
+  final TextEditingController _heartRateController = TextEditingController();
   String _gender = "Male";
   List<String> _selectedDietaryPreferences = [];
 
@@ -47,12 +54,40 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         _errorMessage = "Please select a gender.";
         return;
       }
-      if (_currentPage == 3 && _selectedDietaryPreferences.isEmpty) {
+      if (_currentPage == 3 && _heightController.text.trim().isEmpty) {
+        _errorMessage = "Please enter your height.";
+        return;
+      }
+      if (_currentPage == 3 && _weightController.text.trim().isEmpty) {
+        _errorMessage = "Please enter your weight.";
+        return;
+      }
+      if (_currentPage == 4 && _cholesterolController.text.trim().isEmpty) {
+        _errorMessage = "Please enter your cholesterol level.";
+        return;
+      }
+      if (_currentPage == 4 && _systolicBPController.text.trim().isEmpty) {
+        _errorMessage = "Please enter your systolic blood pressure.";
+        return;
+      }
+      if (_currentPage == 4 && _diastolicBPController.text.trim().isEmpty) {
+        _errorMessage = "Please enter your diastolic blood pressure.";
+        return;
+      }
+      if (_currentPage == 4 && _bloodGlucoseController.text.trim().isEmpty) {
+        _errorMessage = "Please enter your blood glucose level.";
+        return;
+      }
+      if (_currentPage == 4 && _heartRateController.text.trim().isEmpty) {
+        _errorMessage = "Please enter your resting heart rate.";
+        return;
+      }
+      if (_currentPage == 5 && _selectedDietaryPreferences.isEmpty) {
         _errorMessage = "Please select at least one dietary preference.";
         return;
       }
 
-      if (_currentPage < 3) {
+      if (_currentPage < 5) {
         _currentPage++;
         _pageController.nextPage(
           duration: Duration(milliseconds: 300),
@@ -72,6 +107,13 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         "name": _firstNameController.text.trim(),
         "age": _ageController.text.trim(),
         "gender": _gender,
+        "height": _heightController.text.trim(),
+        "weight": _weightController.text.trim(),
+        "cholesterol": _cholesterolController.text.trim(),
+        "systolicBP": _systolicBPController.text.trim(),
+        "diastolicBP": _diastolicBPController.text.trim(),
+        "bloodGlucose": _bloodGlucoseController.text.trim(),
+        "restingHeartRate": _heartRateController.text.trim(),
         "dietaryPreferences": _selectedDietaryPreferences, // Store list in Firestore
       }, SetOptions(merge: true));
 
@@ -111,6 +153,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                 _buildPage2(),
                 _buildPage3(),
                 _buildPage4(),
+                _buildPage5(),
+                _buildPage6(),
               ],
             ),
           ),
@@ -215,8 +259,145 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     );
   }
 
-  // Page 4: Dietary Preferences (Fixed Overflow Issue)
+  // Page 4: Height and Weight
   Widget _buildPage4() {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("How tall are you?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,)),
+            SizedBox(height: 20),
+            TextField(
+              controller: _heightController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                hintText: "Enter your height (cm)",
+                hintStyle: TextStyle(
+                  color: Colors.black.withOpacity(0.4), // Make text slightly invisible
+                  fontSize: 15,
+                ),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 30),
+            Text("How much do you weigh?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,)),
+            SizedBox(height: 20),
+            TextField(
+              controller: _weightController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                hintText: "Enter your weight (kg)",
+                hintStyle: TextStyle(
+                  color: Colors.black.withOpacity(0.4), // Make text slightly invisible
+                  fontSize: 15,
+                ),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 20),
+            Center(child: ElevatedButton(onPressed: _nextPage, child: Text("Next")),),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Page 5: Height and Weight
+  Widget _buildPage5() {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("What is your cholesterol level?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,)),
+            SizedBox(height: 20),
+            TextField(
+              controller: _cholesterolController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                hintText: "Enter your cholesterol level (mg/dl)",
+                hintStyle: TextStyle(
+                  color: Colors.black.withOpacity(0.4), // Make text slightly invisible
+                  fontSize: 15,
+                ),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 30),
+            Text("What is your systolic blood pressure?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,)),
+            SizedBox(height: 20),
+            TextField(
+              controller: _systolicBPController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                hintText: "Enter your systolic blood pressure (mmHg)",
+                hintStyle: TextStyle(
+                  color: Colors.black.withOpacity(0.4), // Make text slightly invisible
+                  fontSize: 15,
+                ),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 30),
+            Text("What is your diastolic blood pressure?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,)),
+            SizedBox(height: 20),
+            TextField(
+              controller: _diastolicBPController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                hintText: "Enter your diastolic blood pressure (mmHg)",
+                hintStyle: TextStyle(
+                  color: Colors.black.withOpacity(0.4), // Make text slightly invisible
+                  fontSize: 15,
+                ),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 30),
+            Text("What is your blood glucose level?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,)),
+            SizedBox(height: 20),
+            TextField(
+              controller: _bloodGlucoseController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                hintText: "Enter your blood glucose level (mg/dl)",
+                hintStyle: TextStyle(
+                  color: Colors.black.withOpacity(0.4), // Make text slightly invisible
+                  fontSize: 15,
+                ),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 30),
+            Text("What is your resting heart rate?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,)),
+            SizedBox(height: 20),
+            TextField(
+              controller: _heartRateController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                hintText: "Enter your resting heart rate (bpm)",
+                hintStyle: TextStyle(
+                  color: Colors.black.withOpacity(0.4), // Make text slightly invisible
+                  fontSize: 15,
+                ),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 20),
+            Center(child: ElevatedButton(onPressed: _nextPage, child: Text("Next")),),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Page 6: Dietary Preferences (Fixed Overflow Issue)
+  Widget _buildPage6() {
     return SingleChildScrollView( // Wrap content to allow scrolling
       child: Padding(
         padding: EdgeInsets.all(20),
