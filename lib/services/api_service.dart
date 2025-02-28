@@ -21,7 +21,7 @@ class ApiService {
           "Blood_Glucose": 110,
           "Heart_Rate": 85
         },
-        "dietary_preferences": ["Low Cholesterol"]
+        "dietary_preferences": ["Lactose Free"]
       }),
     );
 

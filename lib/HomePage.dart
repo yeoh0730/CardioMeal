@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'services/api_service.dart';
+import 'models/recipe_card.dart'; // Import the RecipeCard model
 
 class HomePage extends StatefulWidget {
   @override
@@ -8,7 +9,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<dynamic> _recipes = []; // Store API response
+  List<Map<String, dynamic>> _recipes = []; // Store API response
 
   @override
   void initState() {
@@ -19,12 +20,48 @@ class _HomePageState extends State<HomePage> {
   Future<void> _fetchRecommendations() async {
     try {
       List<dynamic> recommendations = await ApiService.fetchRecommendations();
+      List<Map<String, dynamic>> formattedRecipes = [];
+
+      for (var recipe in recommendations) {
+        String imageUrl = extractValidImage(recipe['Images']);
+
+        if (imageUrl.isNotEmpty) {
+          formattedRecipes.add({
+            "Name": recipe["Name"] ?? "No Name",
+            "Images": imageUrl,
+            "Description": recipe["Description"] ?? "",
+          });
+        }
+      }
+
       setState(() {
-        _recipes = recommendations;
+        _recipes = formattedRecipes;
       });
+
+      print("Loaded ${_recipes.length} recommendations!");
     } catch (error) {
       print("Error fetching recommendations: $error");
     }
+  }
+
+  // Extracts the first valid image URL
+  String extractValidImage(dynamic imagesField) {
+    if (imagesField == null || imagesField == "character(0)") {
+      return ""; // Ignore invalid image fields
+    }
+
+    String imagesString = imagesField.toString();
+    imagesString = imagesString.replaceAll('"', '');
+
+    List<String> imageUrls = imagesString.split(", ");
+
+    for (String url in imageUrls) {
+      if (url.startsWith("https://")) {
+        return url;
+      }
+    }
+
+    return ""; // No valid image found
   }
 
   @override
@@ -139,44 +176,10 @@ class _HomePageState extends State<HomePage> {
                 itemBuilder: (context, index) {
                   final recipe = _recipes[index];
 
-                  // 🔹 Debug: Print the image URL in console
-                  print("Recipe Image URL (Fixed): '${recipe['Images'].trim()}'");
-
-
-                  return Card(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
-                              child: Image.network(
-                                recipe['Images'], // Display Image from API
-                                height: 120,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Icon(Icons.broken_image, size: 100),
-                              ),
-                            ),
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: Icon(Icons.favorite_border, color: Colors.white),
-                            ),
-                          ],
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            recipe['Name'], // Display Recipe Name
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
-                    ),
+                  return RecipeCard(
+                    title: recipe["Name"],
+                    imageUrl: recipe["Images"],
+                    description: recipe["Description"],
                   );
                 },
               ),

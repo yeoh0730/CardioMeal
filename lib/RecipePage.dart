@@ -1,6 +1,92 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'models/recipe_card.dart';
 
-class RecipePage extends StatelessWidget {
+class RecipePage extends StatefulWidget {
+  @override
+  _RecipePageState createState() => _RecipePageState();
+}
+
+class _RecipePageState extends State<RecipePage> {
+  List<Map<String, dynamic>> recipes = [];
+  List<Map<String, dynamic>> filteredRecipes = [];
+  TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRecipes();
+  }
+
+  // Fetch recipes from Firestore
+  void _fetchRecipes() async {
+    try {
+      QuerySnapshot snapshot =
+      await FirebaseFirestore.instance.collection('recipes').get();
+      List<Map<String, dynamic>> loadedRecipes = [];
+
+      for (var doc in snapshot.docs) {
+        Map<String, dynamic> recipe = doc.data() as Map<String, dynamic>;
+
+        // Extract valid image URL
+        String imageUrl = extractFirstValidImage(recipe['Images']);
+
+        if (imageUrl.isNotEmpty) {
+          loadedRecipes.add({
+            "Name": recipe["Name"] ?? "No Name",
+            "Images": imageUrl,
+            "Description": recipe["Description"] ?? "",
+          });
+        }
+      }
+
+      setState(() {
+        recipes = loadedRecipes;
+        filteredRecipes = loadedRecipes;
+      });
+
+      print("Loaded ${recipes.length} recipes!");
+    } catch (e) {
+      print("Error fetching recipes: $e");
+    }
+  }
+
+  // Extracts the first valid image URL
+  String extractFirstValidImage(dynamic imagesField) {
+    if (imagesField == null || imagesField == "character(0)") {
+      return ""; // Ignore invalid image fields
+    }
+
+    String imagesString = imagesField.toString();
+
+    // Remove extra quotation marks if present
+    imagesString = imagesString.replaceAll('"', '');
+
+    // Split by commas (in case multiple URLs exist)
+    List<String> imageUrls = imagesString.split(", ");
+
+    // Check each URL and return the first valid one
+    for (String url in imageUrls) {
+      if (url.startsWith("https://")) {
+        return url;
+      }
+    }
+
+    return ""; // No valid image found
+  }
+
+  // Search filter
+  void _filterRecipes(String query) {
+    List<Map<String, dynamic>> results = recipes.where((recipe) {
+      final name = recipe["Name"].toLowerCase();
+      return name.contains(query.toLowerCase());
+    }).toList();
+
+    setState(() {
+      filteredRecipes = results;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -9,26 +95,29 @@ class RecipePage extends StatelessWidget {
         elevation: 0,
         backgroundColor: Colors.white,
         title: Container(
-          height: 40, // Adjust height as needed
+          height: 40,
           decoration: BoxDecoration(
             color: Colors.grey[200],
             borderRadius: BorderRadius.circular(30),
           ),
           child: TextField(
+            controller: _searchController,
+            onChanged: _filterRecipes,
             decoration: InputDecoration(
-              hintText: 'Search',
-              hintStyle: TextStyle(
-                color: Colors.grey,
-              ),
+              hintText: 'Search recipes',
+              hintStyle: TextStyle(color: Colors.grey),
               border: InputBorder.none,
               prefixIcon: Icon(Icons.search, color: Colors.grey),
-              suffixIcon: IconButton(
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
                 icon: Icon(Icons.clear, color: Colors.grey),
                 onPressed: () {
-                  // Clear the text
+                  _searchController.clear();
+                  _filterRecipes('');
                 },
-              ),
-              contentPadding: EdgeInsets.symmetric(vertical: 10), // Centers the text vertically
+              )
+                  : null,
+              contentPadding: EdgeInsets.symmetric(vertical: 10),
             ),
           ),
         ),
@@ -36,84 +125,48 @@ class RecipePage extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.filter_alt_rounded, color: Colors.black),
             onPressed: () {
-              // Add action for filter or more options
+              // Filter action here
             },
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Recipes",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // **NEW** Recipes Title
+            Text(
+              "Recipes",
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
               ),
-              SizedBox(height: 16),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
+            ),
+            SizedBox(height: 16), // Add spacing before grid
+
+            // Recipe Grid
+            Expanded(
+              child: GridView.builder(
+                itemCount: filteredRecipes.length,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   childAspectRatio: 3 / 4,
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
                 ),
-                itemCount: 8, // Change this to your list length
                 itemBuilder: (context, index) {
-                  return Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.vertical(
-                                top: Radius.circular(10),
-                              ),
-                              child: Image.asset(
-                                'assets/sandwich.jpg', // Replace with actual image asset
-                                height: 120,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: Icon(
-                                Icons.favorite_border,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            index % 2 == 0 ? "Pancake" : "Salad",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  final recipe = filteredRecipes[index];
+                  return RecipeCard(
+                    title: recipe["Name"],
+                    imageUrl: recipe["Images"],
+                    description: recipe["Description"],
                   );
                 },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
