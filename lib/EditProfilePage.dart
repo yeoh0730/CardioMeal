@@ -17,14 +17,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final TextEditingController _weightController = TextEditingController();
   String? _selectedActivityLevel; // Store the selected activity level
 
-  final List<String> _activityLevels = [
-    "Sedentary",
-    "Lightly Active",
-    "Moderately Active",
-    "Active",
-    "Very Active"
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -32,7 +24,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _ageController.text = widget.userData?['age'] ?? '';
     _heightController.text = widget.userData?['height'] ?? '';
     _weightController.text = widget.userData?['weight'] ?? '';
-    _selectedActivityLevel = widget.userData?['activityLevel'] ?? ''; // ✅ Fixed key
+    _selectedActivityLevel = widget.userData?['activityLevel'] ?? ''; // Fixed key name
   }
 
   void _saveChanges() async {
@@ -43,11 +35,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
         'age': _ageController.text.trim(),
         'height': _heightController.text.trim(),
         'weight': _weightController.text.trim(),
-        'activityLevel': _selectedActivityLevel, // ✅ Correctly saving activity level
+        'activityLevel': _selectedActivityLevel, // Ensure this key is correctly written
       });
       Navigator.pop(context);
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -72,24 +65,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
               // Display Current Activity Level
               Text("Activity Level", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              SizedBox(height: 10),
-
-              // ✅ Dynamic Radio Buttons with Current Selection
-              Column(
-                children: _activityLevels.map((level) {
-                  return RadioListTile<String>(
-                    title: Text(level, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-                    value: level,
-                    groupValue: _selectedActivityLevel, // ✅ Default value pre-selected
-                    onChanged: (String? value) {
-                      setState(() {
-                        _selectedActivityLevel = value;
-                      });
-                    },
-                    contentPadding: EdgeInsets.symmetric(vertical: 2), // Reduce padding
-                  );
-                }).toList(),
-              ),
+              _buildActivityRadio("Sedentary", "Little or no exercise, mostly sitting."),
+              _buildActivityRadio("Lightly Active", "Light exercise 1-3 days per week."),
+              _buildActivityRadio("Moderately Active", "Moderate exercise 3-5 days per week."),
+              _buildActivityRadio("Active", "Hard exercise 6-7 days per week."),
+              _buildActivityRadio("Very Active", "Very intense daily exercise or physical job."),
 
               SizedBox(height: 20),
               Center(
@@ -101,6 +81,37 @@ class _EditProfilePageState extends State<EditProfilePage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // ✅ Radio Button Selection for Activity Level (Shows Current Selection)
+  Widget _buildActivityRadio(String title, String description) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Radio<String>(
+            value: title,
+            groupValue: _selectedActivityLevel, // Ensure this matches stored value
+            onChanged: (String? value) {
+              setState(() {
+                _selectedActivityLevel = value;
+              });
+            },
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+                SizedBox(height: 2),
+                Text(description, style: TextStyle(fontSize: 14, color: Colors.black54)),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
