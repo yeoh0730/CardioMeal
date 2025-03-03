@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:project/LoginPage.dart';
+import 'EditProfilePage.dart';  // Import new page
+import 'EditDietPreferencePage.dart'; // Import new page
+import 'LoginPage.dart';
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -77,10 +79,24 @@ class _ProfilePageState extends State<ProfilePage> {
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  _buildOption(Icons.person, "Edit Profile"),
-                  _buildOption(Icons.notifications, "Notification"),
-                  _buildOption(Icons.restaurant_menu, "Edit Diet Preference"),
-                  _buildOption(Icons.logout, "Logout", isLogout: true),
+                  _buildOption(Icons.person, "Edit Profile", () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => EditProfilePage(userData: userData),
+                      ),
+                    );
+                  }),
+                  _buildOption(Icons.notifications, "Notification", () {}),
+                  _buildOption(Icons.restaurant_menu, "Edit Diet Preference", () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => EditDietPreferencePage(userData: userData),
+                      ),
+                    );
+                  }),
+                  _buildOption(Icons.logout, "Logout", _logout, isLogout: true),
                 ],
               ),
             ),
@@ -106,14 +122,12 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildOption(IconData icon, String title, {bool isLogout = false}) {
+  Widget _buildOption(IconData icon, String title, VoidCallback onTap, {bool isLogout = false}) {
     return ListTile(
       leading: Icon(icon, color: isLogout ? Colors.red : Colors.black),
       title: Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
       trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-      onTap: () {
-        if (isLogout) _logout();
-      },
+      onTap: onTap,
     );
   }
 

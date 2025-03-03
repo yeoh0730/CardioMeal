@@ -497,7 +497,6 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     );
   }
 
-
   // ✅ Checkbox Selection for Dietary Preferences
   Widget _buildCheckbox(String title) {
     return CheckboxListTile(
