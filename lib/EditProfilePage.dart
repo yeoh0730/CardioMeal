@@ -20,11 +20,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    _nameController.text = widget.userData?['name'] ?? '';
-    _ageController.text = widget.userData?['age'] ?? '';
-    _heightController.text = widget.userData?['height'] ?? '';
-    _weightController.text = widget.userData?['weight'] ?? '';
-    _selectedActivityLevel = widget.userData?['activityLevel'] ?? ''; // Fixed key name
+    _fetchUserData();  // ✅ Fetch Firestore data properly before setting values
+  }
+
+  Future<Map<String, dynamic>?> _fetchUserData() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+
+      if (userDoc.exists && userDoc.data() != null) {
+        print("Fetched Firestore Data: ${userDoc.data()}"); // Debugging output
+
+        return userDoc.data() as Map<String, dynamic>;
+      }
+    }
+    return null;
   }
 
   void _saveChanges() async {
@@ -41,7 +51,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -51,41 +60,63 @@ class _EditProfilePageState extends State<EditProfilePage> {
         backgroundColor: Colors.white,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(controller: _nameController, decoration: InputDecoration(labelText: "Name")),
-              TextField(controller: _ageController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: "Age")),
-              TextField(controller: _heightController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: "Height (cm)")),
-              TextField(controller: _weightController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: "Weight (kg)")),
-              SizedBox(height: 20),
+      body: FutureBuilder<Map<String, dynamic>?>(
+        future: _fetchUserData(), // ✅ Wait for Firestore data
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          }
 
-              // Display Current Activity Level
-              Text("Activity Level", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              _buildActivityRadio("Sedentary", "Little or no exercise, mostly sitting."),
-              _buildActivityRadio("Lightly Active", "Light exercise 1-3 days per week."),
-              _buildActivityRadio("Moderately Active", "Moderate exercise 3-5 days per week."),
-              _buildActivityRadio("Active", "Hard exercise 6-7 days per week."),
-              _buildActivityRadio("Very Active", "Very intense daily exercise or physical job."),
+          if (snapshot.hasError || snapshot.data == null) {
+            return Center(child: Text("Failed to load data"));
+          }
 
-              SizedBox(height: 20),
-              Center(
-                child: ElevatedButton(
-                  onPressed: _saveChanges,
-                  child: Text("Save Changes"),
-                ),
+          // ✅ Set controllers only after data is loaded
+          var userData = snapshot.data!;
+          _nameController.text = userData['name'] ?? '';
+          _ageController.text = userData['age']?.toString() ?? '';
+          _heightController.text = userData['height']?.toString() ?? '';
+          _weightController.text = userData['weight']?.toString() ?? '';
+          _selectedActivityLevel = userData['activityLevel'] ?? 'Sedentary';
+
+          print("Selected Activity Level from Firestore: $_selectedActivityLevel"); // Debugging
+
+          return SingleChildScrollView(  // ✅ Wrap content to prevent overflow
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(controller: _nameController, decoration: InputDecoration(labelText: "Name")),
+                  TextField(controller: _ageController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: "Age")),
+                  TextField(controller: _heightController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: "Height (cm)")),
+                  TextField(controller: _weightController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: "Weight (kg)")),
+                  SizedBox(height: 20),
+
+                  // Activity Level Section
+                  Text("Activity Level", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  _buildActivityRadio("Sedentary", "Little or no exercise, mostly sitting."),
+                  _buildActivityRadio("Lightly Active", "Light exercise 1-3 days per week."),
+                  _buildActivityRadio("Moderately Active", "Moderate exercise 3-5 days per week."),
+                  _buildActivityRadio("Active", "Hard exercise 6-7 days per week."),
+                  _buildActivityRadio("Very Active", "Very intense daily exercise or physical job."),
+
+                  SizedBox(height: 20),
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: _saveChanges,
+                      child: Text("Save Changes"),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
 
-  // ✅ Radio Button Selection for Activity Level (Shows Current Selection)
   Widget _buildActivityRadio(String title, String description) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5.0),
@@ -94,10 +125,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
         children: [
           Radio<String>(
             value: title,
-            groupValue: _selectedActivityLevel, // Ensure this matches stored value
+            groupValue: _selectedActivityLevel, // ✅ This should now properly reflect Firestore data
             onChanged: (String? value) {
               setState(() {
                 _selectedActivityLevel = value;
+                print("Updated Selected Activity Level: $_selectedActivityLevel"); // Debugging
               });
             },
           ),

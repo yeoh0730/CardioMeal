@@ -126,7 +126,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         "bloodGlucose": _bloodGlucoseController.text.trim(),
         "restingHeartRate": _heartRateController.text.trim(),
         "dietaryPreferences": _selectedDietaryPreferences, // Store list in Firestore
-        "activiyLevel": _selectedActivityLevel, // Store list in Firestore
+        "activityLevel": _selectedActivityLevel, // Store list in Firestore
       }, SetOptions(merge: true));
 
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen()));
