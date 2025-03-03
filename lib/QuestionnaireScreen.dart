@@ -24,6 +24,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   final TextEditingController _heartRateController = TextEditingController();
   String _gender = "Male";
   List<String> _selectedDietaryPreferences = [];
+  String? _selectedActivityLevel;
 
   String _errorMessage = "";
 
@@ -34,6 +35,12 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       } else {
         _selectedDietaryPreferences.add(preference);
       }
+    });
+  }
+
+  void _toggleActivityLevel(String choice) {
+    setState(() {
+      _selectedActivityLevel = choice; // Store a single value
     });
   }
 
@@ -62,32 +69,36 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         _errorMessage = "Please enter your weight.";
         return;
       }
-      if (_currentPage == 4 && _cholesterolController.text.trim().isEmpty) {
+      if (_currentPage == 4 && (_selectedActivityLevel == null || _selectedActivityLevel!.isEmpty)) {
+        _errorMessage = "Please select your level of activity.";
+        return;
+      }
+      if (_currentPage == 5 && _cholesterolController.text.trim().isEmpty) {
         _errorMessage = "Please enter your cholesterol level.";
         return;
       }
-      if (_currentPage == 4 && _systolicBPController.text.trim().isEmpty) {
+      if (_currentPage == 5 && _systolicBPController.text.trim().isEmpty) {
         _errorMessage = "Please enter your systolic blood pressure.";
         return;
       }
-      if (_currentPage == 4 && _diastolicBPController.text.trim().isEmpty) {
+      if (_currentPage == 5 && _diastolicBPController.text.trim().isEmpty) {
         _errorMessage = "Please enter your diastolic blood pressure.";
         return;
       }
-      if (_currentPage == 4 && _bloodGlucoseController.text.trim().isEmpty) {
+      if (_currentPage == 5 && _bloodGlucoseController.text.trim().isEmpty) {
         _errorMessage = "Please enter your blood glucose level.";
         return;
       }
-      if (_currentPage == 4 && _heartRateController.text.trim().isEmpty) {
+      if (_currentPage == 5 && _heartRateController.text.trim().isEmpty) {
         _errorMessage = "Please enter your resting heart rate.";
         return;
       }
-      if (_currentPage == 5 && _selectedDietaryPreferences.isEmpty) {
+      if (_currentPage == 6 && _selectedDietaryPreferences.isEmpty) {
         _errorMessage = "Please select at least one dietary preference.";
         return;
       }
 
-      if (_currentPage < 5) {
+      if (_currentPage < 6) {
         _currentPage++;
         _pageController.nextPage(
           duration: Duration(milliseconds: 300),
@@ -115,6 +126,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         "bloodGlucose": _bloodGlucoseController.text.trim(),
         "restingHeartRate": _heartRateController.text.trim(),
         "dietaryPreferences": _selectedDietaryPreferences, // Store list in Firestore
+        "activiyLevel": _selectedActivityLevel, // Store list in Firestore
       }, SetOptions(merge: true));
 
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen()));
@@ -132,7 +144,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           onPressed: () {
             if (_currentPage > 0) {
               setState(() {
-                _currentPage--; // Move back a question
+                _currentPage--;
                 _pageController.previousPage(
                   duration: Duration(milliseconds: 300),
                   curve: Curves.ease,
@@ -153,15 +165,19 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                 _buildPage2(),
                 _buildPage3(),
                 _buildPage4(),
-                _buildPage5(),
+                _buildPage5(), // Activity Level Page
                 _buildPage6(),
+                _buildPage7(),
               ],
             ),
           ),
           if (_errorMessage.isNotEmpty)
             Padding(
               padding: EdgeInsets.only(bottom: 10),
-              child: Text(_errorMessage, style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+              child: Text(
+                _errorMessage,
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              ),
             ),
         ],
       ),
@@ -243,7 +259,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
             SizedBox(height: 20),
             DropdownButtonFormField<String>(
               value: _gender,
-              items: ["Male", "Female", "Prefer not to say"].map((String value) {
+              items: ["Male", "Female"].map((String value) {
                 return DropdownMenuItem<String>(
                   value: value,
                   child: Text(value),
@@ -305,8 +321,34 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     );
   }
 
-  // Page 5: Height and Weight
+  // ✅ Page 5: Activity Level with Radio Buttons & Descriptions
   Widget _buildPage5() {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("What is your level of activity?",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            SizedBox(height: 20),
+
+            _buildActivityOption("Sedentary", "Little or no exercise, mostly sitting."),
+            _buildActivityOption("Lightly Active", "Light exercise 1-3 days per week."),
+            _buildActivityOption("Moderately Active", "Moderate exercise 3-5 days per week."),
+            _buildActivityOption("Active", "Hard exercise 6-7 days per week."),
+            _buildActivityOption("Very Active", "Very intense daily exercise or physical job."),
+
+            SizedBox(height: 20),
+            Center(child: ElevatedButton(onPressed: _nextPage, child: Text("Next"))),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Page 6: Health metrics
+  Widget _buildPage6() {
     return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.all(20),
@@ -396,8 +438,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     );
   }
 
-  // Page 6: Dietary Preferences (Fixed Overflow Issue)
-  Widget _buildPage6() {
+  // Page 7: Dietary Preferences (Fixed Overflow Issue)
+  Widget _buildPage7() {
     return SingleChildScrollView( // Wrap content to allow scrolling
       child: Padding(
         padding: EdgeInsets.all(20),
@@ -430,7 +472,33 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     );
   }
 
-  // Helper function for creating checkboxes
+
+  // ✅ Radio Button Selection for Activity Level
+  Widget _buildActivityOption(String title, String description) {
+    return RadioListTile<String>(
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start, // Align text to left
+        children: [
+          Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)), // Activity Level
+          SizedBox(height: 4), // Small spacing
+          Text(description, style: TextStyle(fontSize: 14, color: Colors.black54)), // Description
+        ],
+      ),
+      value: title,
+      groupValue: _selectedActivityLevel,
+      onChanged: (String? value) {
+        if (value != null) {
+          setState(() {
+            _selectedActivityLevel = value; // Store selected value
+          });
+        }
+      },
+      contentPadding: EdgeInsets.symmetric(vertical: 2), // Reduce padding
+    );
+  }
+
+
+  // ✅ Checkbox Selection for Dietary Preferences
   Widget _buildCheckbox(String title) {
     return CheckboxListTile(
       title: Text(title),
@@ -441,4 +509,5 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     );
   }
 }
+
 
