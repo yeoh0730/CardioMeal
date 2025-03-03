@@ -79,7 +79,7 @@ class _ProfilePageState extends State<ProfilePage> {
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  _buildOption(Icons.person, "Edit Profile", () {
+                  _buildOption(Icons.person, "View Profile", () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -88,7 +88,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     );
                   }),
                   _buildOption(Icons.notifications, "Notification", () {}),
-                  _buildOption(Icons.restaurant_menu, "Edit Diet Preference", () {
+                  _buildOption(Icons.restaurant_menu, "View Dietary Preferences", () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
