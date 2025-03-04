@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:project/HomePage.dart';
 import 'main.dart';
+import 'models/custom_button.dart';
+import 'models/custom_input_field.dart';
 
 class QuestionnaireScreen extends StatefulWidget {
   @override
@@ -22,7 +23,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   final TextEditingController _diastolicBPController = TextEditingController();
   final TextEditingController _bloodGlucoseController = TextEditingController();
   final TextEditingController _heartRateController = TextEditingController();
-  String _gender = "Male";
+  String? _gender;
   List<String> _selectedDietaryPreferences = [];
   String? _selectedActivityLevel;
 
@@ -35,12 +36,6 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       } else {
         _selectedDietaryPreferences.add(preference);
       }
-    });
-  }
-
-  void _toggleActivityLevel(String choice) {
-    setState(() {
-      _selectedActivityLevel = choice; // Store a single value
     });
   }
 
@@ -57,7 +52,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         _errorMessage = "Please enter your age.";
         return;
       }
-      if (_currentPage == 2 && _gender.isEmpty) {
+      if (_currentPage == 2 && (_gender == null || _gender!.isEmpty)) {
         _errorMessage = "Please select a gender.";
         return;
       }
@@ -136,8 +131,10 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       resizeToAvoidBottomInset: true, // Prevents keyboard overflow
       appBar: AppBar(
+        backgroundColor: Colors.white,
         title: Text("Complete Your Profile"),
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
@@ -191,28 +188,10 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         padding: EdgeInsets.all(20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Image.asset('assets/logo.png', width: 250),
-            SizedBox(height: 20),
-            Text("Welcome", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold,)),
-            SizedBox(height: 40),
-            Align(
-              alignment: Alignment.centerLeft, // Align text to the left
-              child: Text(
-                "What can we call you?",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,),
-              ),
-            ),
-            SizedBox(height: 15),
-            TextField(
-              controller: _firstNameController,
-              decoration: InputDecoration(
-                labelText: "First Name",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: 40),
-            Center(child: ElevatedButton(onPressed: _nextPage, child: Text("Next")),),
+            CustomInputField(controller: _firstNameController, labelText: "What can we call you?", labelText1: "Enter your first name"),
+            Center(child: CustomButton(text: "Next", onPressed: _nextPage)),
           ],
         ),
       ),
@@ -228,18 +207,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("How old are you?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,)),
-            SizedBox(height: 20),
-            TextField(
-              controller: _ageController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: "Enter your age",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: 40),
-            Center(child: ElevatedButton(onPressed: _nextPage, child: Text("Next")),),
+            CustomInputField(controller: _ageController, labelText: "How old are you?", labelText1: "Enter your age", keyboardType: TextInputType.number),
+            Center(child: CustomButton(text: "Next", onPressed: _nextPage)),
           ],
         ),
       ),
@@ -258,17 +227,37 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
             Text("What is your gender?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,)),
             SizedBox(height: 20),
             DropdownButtonFormField<String>(
-              value: _gender,
+              value: _gender, // Initially null, so hint text will show
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey, width: 2.0),
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey, width: 2.0),
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.black, width: 2.0),
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+              ),
+              dropdownColor: Colors.white, // Ensure the dropdown background is white
+              hint: Text(
+                "Select your gender",
+                style: TextStyle(color: Colors.black.withOpacity(0.5)), // Lighter hint text
+              ),
               items: ["Male", "Female"].map((String value) {
                 return DropdownMenuItem<String>(
                   value: value,
                   child: Text(value),
                 );
               }).toList(),
-              onChanged: (value) => setState(() => _gender = value!),
+              onChanged: (value) => setState(() => _gender = value),
             ),
-            SizedBox(height: 40),
-            Center(child: ElevatedButton(onPressed: _nextPage, child: Text("Next")),),
+            SizedBox(height: 30),
+            Center(child: CustomButton(text: "Next", onPressed: _nextPage)),
           ],
         ),
       ),
@@ -284,37 +273,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("How tall are you?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,)),
-            SizedBox(height: 20),
-            TextField(
-              controller: _heightController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                hintText: "Enter your height (cm)",
-                hintStyle: TextStyle(
-                  color: Colors.black.withOpacity(0.4), // Make text slightly invisible
-                  fontSize: 15,
-                ),
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: 30),
-            Text("How much do you weigh?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,)),
-            SizedBox(height: 20),
-            TextField(
-              controller: _weightController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                hintText: "Enter your weight (kg)",
-                hintStyle: TextStyle(
-                  color: Colors.black.withOpacity(0.4), // Make text slightly invisible
-                  fontSize: 15,
-                ),
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: 20),
-            Center(child: ElevatedButton(onPressed: _nextPage, child: Text("Next")),),
+            CustomInputField(controller: _heightController, labelText: "How tall are you?", labelText1: "Enter your height (cm)", keyboardType: TextInputType.number),
+            CustomInputField(controller: _weightController, labelText: "How much do you weigh?", labelText1: "Enter your weight (kg)", keyboardType: TextInputType.number),
+            Center(child: CustomButton(text: "Next", onPressed: _nextPage)),
           ],
         ),
       ),
@@ -340,7 +301,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
             _buildActivityOption("Very Active", "Very intense daily exercise or physical job."),
 
             SizedBox(height: 20),
-            Center(child: ElevatedButton(onPressed: _nextPage, child: Text("Next"))),
+            Center(child: CustomButton(text: "Next", onPressed: _nextPage)),
           ],
         ),
       ),
@@ -356,82 +317,12 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("What is your cholesterol level?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,)),
-            SizedBox(height: 20),
-            TextField(
-              controller: _cholesterolController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                hintText: "Enter your cholesterol level (mg/dl)",
-                hintStyle: TextStyle(
-                  color: Colors.black.withOpacity(0.4), // Make text slightly invisible
-                  fontSize: 15,
-                ),
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: 30),
-            Text("What is your systolic blood pressure?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,)),
-            SizedBox(height: 20),
-            TextField(
-              controller: _systolicBPController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                hintText: "Enter your systolic blood pressure (mmHg)",
-                hintStyle: TextStyle(
-                  color: Colors.black.withOpacity(0.4), // Make text slightly invisible
-                  fontSize: 15,
-                ),
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: 30),
-            Text("What is your diastolic blood pressure?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,)),
-            SizedBox(height: 20),
-            TextField(
-              controller: _diastolicBPController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                hintText: "Enter your diastolic blood pressure (mmHg)",
-                hintStyle: TextStyle(
-                  color: Colors.black.withOpacity(0.4), // Make text slightly invisible
-                  fontSize: 15,
-                ),
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: 30),
-            Text("What is your blood glucose level?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,)),
-            SizedBox(height: 20),
-            TextField(
-              controller: _bloodGlucoseController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                hintText: "Enter your blood glucose level (mg/dl)",
-                hintStyle: TextStyle(
-                  color: Colors.black.withOpacity(0.4), // Make text slightly invisible
-                  fontSize: 15,
-                ),
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: 30),
-            Text("What is your resting heart rate?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,)),
-            SizedBox(height: 20),
-            TextField(
-              controller: _heartRateController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                hintText: "Enter your resting heart rate (bpm)",
-                hintStyle: TextStyle(
-                  color: Colors.black.withOpacity(0.4), // Make text slightly invisible
-                  fontSize: 15,
-                ),
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: 20),
-            Center(child: ElevatedButton(onPressed: _nextPage, child: Text("Next")),),
+            CustomInputField(controller: _cholesterolController, labelText: "What is your cholesterol level?", labelText1: "Enter your cholesterol level (mg/dl)", keyboardType: TextInputType.number),
+            CustomInputField(controller: _systolicBPController, labelText: "What is your systolic blood pressure?", labelText1: "Enter your systolic blood pressure (mmHg)", keyboardType: TextInputType.number),
+            CustomInputField(controller: _diastolicBPController, labelText: "What is your diastolic blood pressure?", labelText1: "Enter your diastolic blood pressure (mmHg)", keyboardType: TextInputType.number),
+            CustomInputField(controller: _bloodGlucoseController, labelText: "What is your blood glucose level?", labelText1: "Enter your blood glucose level (mg/dl)", keyboardType: TextInputType.number),
+            CustomInputField(controller: _heartRateController, labelText: "What is your resting heart rate?", labelText1: "Enter your resting heart rate (bpm)", keyboardType: TextInputType.number),
+            Center(child: CustomButton(text: "Next", onPressed: _nextPage)),
           ],
         ),
       ),
@@ -460,12 +351,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
             _buildCheckbox("European"),
             _buildCheckbox("Mexican"),
             SizedBox(height: 20),
-            Center( // Center the button
-              child: ElevatedButton(
-                  onPressed: _nextPage,
-                  child: Text("Finish")
-              ),
-            ),
+            Center(child: CustomButton(text: "Finish", onPressed: _nextPage)),
           ],
         ),
       ),
@@ -473,7 +359,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   }
 
 
-  // ✅ Radio Button Selection for Activity Level
+  // Radio Button Selection for Activity Level
   Widget _buildActivityOption(String title, String description) {
     return RadioListTile<String>(
       title: Column(
@@ -497,7 +383,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     );
   }
 
-  // ✅ Checkbox Selection for Dietary Preferences
+  // Checkbox Selection for Dietary Preferences
   Widget _buildCheckbox(String title) {
     return CheckboxListTile(
       title: Text(title),
