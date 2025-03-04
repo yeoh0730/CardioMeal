@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:project/DashboardPage.dart';
+import 'package:project/models/custom_toggle_bar.dart'; // Import toggle bar
+import 'models/DashboardView.dart'; // Import Dashboard as a view, not a page
 
 class DiaryPage extends StatefulWidget {
   @override
@@ -7,7 +8,7 @@ class DiaryPage extends StatefulWidget {
 }
 
 class _DiaryPageState extends State<DiaryPage> {
-  bool isLogMealSelected = true;
+  bool isLogMealSelected = true; // Default to Log Meal
 
   @override
   Widget build(BuildContext context) {
@@ -27,104 +28,55 @@ class _DiaryPageState extends State<DiaryPage> {
         ),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Toggle Buttons for "Log Meal" and "Dashboard"
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        isLogMealSelected = true;
-                      });
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isLogMealSelected ? Colors.red : Colors.grey[300],
-                      foregroundColor: isLogMealSelected ? Colors.white : Colors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(20),
-                          bottomLeft: Radius.circular(20),
-                        ),
-                      ),
-                    ),
-                    child: Text('Log Meal'),
-                  ),
-                ),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        isLogMealSelected = false;
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => DashboardPage()),
-                        );
-                      });
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: !isLogMealSelected ? Colors.red : Colors.grey[300],
-                      foregroundColor: !isLogMealSelected ? Colors.white : Colors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.only(
-                          topRight: Radius.circular(20),
-                          bottomRight: Radius.circular(20),
-                        ),
-                      ),
-                    ),
-                    child: Text('Dashboard'),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 16),
-            // Today Label and Edit Icon
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Today",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.edit, color: Colors.grey),
-                  onPressed: () {
-                    // Edit action
-                  },
-                ),
-              ],
-            ),
-            // Meal Sections
-            Expanded(
-              child: ListView(
-                children: [
-                  buildMealSection('Breakfast', Colors.red, [
-                    'Coffee with milk 100 g',
-                    'Sandwich 100 g',
-                    'Walnuts 20 g'
-                  ], 'Sodium: 800 mg', 'Fat: 10 g', 'Carb: 30 g'),
-                  buildMealSection('Lunch', Colors.orange, [], '', '', ''),
-                  buildMealSection('Dinner', Colors.teal, [], '', '', ''),
-                  buildMealSection('Snacks', Colors.purple, [], '', '', ''),
-                ],
-              ),
-            ),
-          ],
-        ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ✅ Custom Toggle Bar
+          CustomToggleBar(
+            isSelected: isLogMealSelected,
+            onToggle: (bool isSelected) {
+              setState(() {
+                isLogMealSelected = isSelected; // Toggle between Log Meal & Dashboard
+              });
+            },
+          ),
+          SizedBox(height: 5),
+
+          // ✅ Switch between Log Meal and Dashboard
+          Expanded(
+            child: isLogMealSelected ? _buildLogMealView() : DashboardView(),
+          ),
+        ],
       ),
     );
   }
 
-  // Helper function to create meal sections
-  Widget buildMealSection(
+  // ✅ Log Meal View (Original Content)
+  Widget _buildLogMealView() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: ListView(
+        children: [
+          Text(
+            "Today",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 8),
+          _buildMealSection('Breakfast', Colors.red, [
+            'Coffee with milk 100 g',
+            'Sandwich 100 g',
+            'Walnuts 20 g'
+          ], 'Sodium: 800 mg', 'Fat: 10 g', 'Carb: 30 g'),
+          _buildMealSection('Lunch', Colors.orange, [], '', '', ''),
+          _buildMealSection('Dinner', Colors.teal, [], '', '', ''),
+          _buildMealSection('Snacks', Colors.purple, [], '', '', ''),
+        ],
+      ),
+    );
+  }
+
+  // ✅ Meal Section UI
+  Widget _buildMealSection(
       String mealTitle, Color color, List<String> items, String sodium, String fat, String carb) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -148,10 +100,7 @@ class _DiaryPageState extends State<DiaryPage> {
                   Expanded(
                     child: Text(
                       mealTitle,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
                   IconButton(
@@ -162,15 +111,11 @@ class _DiaryPageState extends State<DiaryPage> {
                   ),
                 ],
               ),
-              // Food items for the meal
               ...items.map((item) => Padding(
                 padding: const EdgeInsets.only(left: 16.0, top: 4.0),
                 child: Text(
                   item,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.black87,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
                 ),
               )),
               if (items.isNotEmpty) Divider(),
