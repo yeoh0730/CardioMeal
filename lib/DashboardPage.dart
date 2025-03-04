@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 class DashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       backgroundColor: Colors.white,
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(16.0),
           child: Text(
             "Log your daily food intake, monitor nutrient consumption, and track progress toward your health goals.",
             style: TextStyle(fontSize: 18, color: Colors.black87),

@@ -6,7 +6,7 @@ class CustomInputField extends StatefulWidget {
   final String labelText1;
   final TextInputType keyboardType;
 
-  CustomInputField({
+  const CustomInputField({
     required this.controller,
     required this.labelText,
     required this.labelText1,
@@ -27,9 +27,9 @@ class _CustomInputFieldState extends State<CustomInputField> {
       children: [
         Text(
           widget.labelText,
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
-        SizedBox(height: 15),
+        const SizedBox(height: 15),
         Focus(
           onFocusChange: (hasFocus) {
             setState(() {
@@ -39,7 +39,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
           child: TextField(
             controller: widget.controller,
             keyboardType: widget.keyboardType,
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.black, // Text color when typing
             ),
             decoration: InputDecoration(
@@ -47,21 +47,21 @@ class _CustomInputFieldState extends State<CustomInputField> {
               labelStyle: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w400,
-                color: _isFocused ? Colors.black : Colors.black.withOpacity(0.4), // Opaque hint text
+                color: _isFocused ? Colors.black : Colors.black.withAlpha((0.4 * 255).toInt()), // Opaque hint text
               ),
               focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.black, width: 2.0), // **Bold black border when focused**
+                borderSide: const BorderSide(color: Colors.black, width: 2.0), // **Bold black border when focused**
                 borderRadius: BorderRadius.circular(8.0),
               ),
               enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.grey, width: 2.0), // **Default border**
+                borderSide: const BorderSide(color: Colors.grey, width: 2.0), // **Default border**
                 borderRadius: BorderRadius.circular(8.0),
               ),
-              contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+              contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
             ),
           ),
         ),
-        SizedBox(height: 30),
+        const SizedBox(height: 30),
       ],
     );
   }

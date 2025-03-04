@@ -17,7 +17,7 @@ class _DiaryPageState extends State<DiaryPage> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
-        title: Text(
+        title: const Text(
           'Diary',
           style: TextStyle(
             fontSize: 25,
@@ -40,7 +40,7 @@ class _DiaryPageState extends State<DiaryPage> {
               });
             },
           ),
-          SizedBox(height: 5),
+          const SizedBox(height: 5),
 
           // ✅ Switch between Log Meal and Dashboard
           Expanded(
@@ -57,11 +57,11 @@ class _DiaryPageState extends State<DiaryPage> {
       padding: const EdgeInsets.all(16.0),
       child: ListView(
         children: [
-          Text(
+          const Text(
             "Today",
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           _buildMealSection('Breakfast', Colors.red, [
             'Coffee with milk 100 g',
             'Sandwich 100 g',
@@ -96,15 +96,15 @@ class _DiaryPageState extends State<DiaryPage> {
                     height: 40,
                     color: color,
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       mealTitle,
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.add_circle, color: Colors.red),
+                    icon: const Icon(Icons.add_circle, color: Colors.red),
                     onPressed: () {
                       // Add meal action
                     },
@@ -115,19 +115,19 @@ class _DiaryPageState extends State<DiaryPage> {
                 padding: const EdgeInsets.only(left: 16.0, top: 4.0),
                 child: Text(
                   item,
-                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                  style: const TextStyle(fontSize: 14, color: Colors.black87),
                 ),
               )),
-              if (items.isNotEmpty) Divider(),
+              if (items.isNotEmpty) const Divider(),
               if (items.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(left: 16.0, top: 4.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(sodium, style: TextStyle(color: Colors.grey)),
-                      Text(fat, style: TextStyle(color: Colors.grey)),
-                      Text(carb, style: TextStyle(color: Colors.grey)),
+                      Text(sodium, style: const TextStyle(color: Colors.grey)),
+                      Text(fat, style: const TextStyle(color: Colors.grey)),
+                      Text(carb, style: const TextStyle(color: Colors.grey)),
                     ],
                   ),
                 ),

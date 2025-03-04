@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class EditProfilePage extends StatefulWidget {
   final Map<String, dynamic>? userData;
-  EditProfilePage({required this.userData});
+  const EditProfilePage({required this.userData});
 
   @override
   _EditProfilePageState createState() => _EditProfilePageState();
@@ -56,7 +56,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text("Edit Profile"),
+        title: const Text("Edit Profile"),
         backgroundColor: Colors.white,
         elevation: 0,
       ),
@@ -64,11 +64,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
         future: _fetchUserData(), // ✅ Wait for Firestore data
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError || snapshot.data == null) {
-            return Center(child: Text("Failed to load data"));
+            return const Center(child: Text("Failed to load data"));
           }
 
           // ✅ Set controllers only after data is loaded
@@ -79,33 +79,33 @@ class _EditProfilePageState extends State<EditProfilePage> {
           _weightController.text = userData['weight']?.toString() ?? '';
           _selectedActivityLevel = userData['activityLevel'] ?? 'Sedentary';
 
-          print("Selected Activity Level from Firestore: $_selectedActivityLevel"); // Debugging
+          // print("Selected Activity Level from Firestore: $_selectedActivityLevel"); // Debugging
 
           return SingleChildScrollView(  // ✅ Wrap content to prevent overflow
             child: Padding(
-              padding: EdgeInsets.all(20),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TextField(controller: _nameController, decoration: InputDecoration(labelText: "Name")),
-                  TextField(controller: _ageController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: "Age")),
-                  TextField(controller: _heightController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: "Height (cm)")),
-                  TextField(controller: _weightController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: "Weight (kg)")),
-                  SizedBox(height: 20),
+                  TextField(controller: _nameController, decoration: const InputDecoration(labelText: "Name")),
+                  TextField(controller: _ageController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Age")),
+                  TextField(controller: _heightController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Height (cm)")),
+                  TextField(controller: _weightController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "Weight (kg)")),
+                  const SizedBox(height: 20),
 
                   // Activity Level Section
-                  Text("Activity Level", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Text("Activity Level", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   _buildActivityRadio("Sedentary", "Little or no exercise, mostly sitting."),
                   _buildActivityRadio("Lightly Active", "Light exercise 1-3 days per week."),
                   _buildActivityRadio("Moderately Active", "Moderate exercise 3-5 days per week."),
                   _buildActivityRadio("Active", "Hard exercise 6-7 days per week."),
                   _buildActivityRadio("Very Active", "Very intense daily exercise or physical job."),
 
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                   Center(
                     child: ElevatedButton(
                       onPressed: _saveChanges,
-                      child: Text("Save Changes"),
+                      child: const Text("Save Changes"),
                     ),
                   ),
                 ],
@@ -129,7 +129,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             onChanged: (String? value) {
               setState(() {
                 _selectedActivityLevel = value;
-                print("Updated Selected Activity Level: $_selectedActivityLevel"); // Debugging
+                // print("Updated Selected Activity Level: $_selectedActivityLevel"); // Debugging
               });
             },
           ),
@@ -137,9 +137,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-                SizedBox(height: 2),
-                Text(description, style: TextStyle(fontSize: 14, color: Colors.black54)),
+                Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 2),
+                Text(description, style: const TextStyle(fontSize: 14, color: Colors.black54)),
               ],
             ),
           ),

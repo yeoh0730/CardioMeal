@@ -6,7 +6,7 @@ class CustomButton extends StatelessWidget {
   final Color backgroundColor;
   final Color textColor;
 
-  CustomButton({
+  const CustomButton({
     required this.text,
     required this.onPressed,
     this.backgroundColor = const Color.fromRGBO(244, 67, 54, 1), // Default Red color
@@ -20,7 +20,7 @@ class CustomButton extends StatelessWidget {
       style: ElevatedButton.styleFrom(
         backgroundColor: backgroundColor, // Button color
         foregroundColor: textColor, // Text color
-        padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12), // Button size
+        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12), // Button size
       ),
       child: Text(text, style: TextStyle(color: textColor)),
     );

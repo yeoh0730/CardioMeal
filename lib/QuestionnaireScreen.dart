@@ -96,7 +96,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       if (_currentPage < 6) {
         _currentPage++;
         _pageController.nextPage(
-          duration: Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 300),
           curve: Curves.ease,
         );
       } else {
@@ -135,15 +135,15 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       resizeToAvoidBottomInset: true, // Prevents keyboard overflow
       appBar: AppBar(
         backgroundColor: Colors.white,
-        title: Text("Complete Your Profile"),
+        title: const Text("Complete Your Profile"),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () {
             if (_currentPage > 0) {
               setState(() {
                 _currentPage--;
                 _pageController.previousPage(
-                  duration: Duration(milliseconds: 300),
+                  duration: const Duration(milliseconds: 300),
                   curve: Curves.ease,
                 );
               });
@@ -156,7 +156,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           Expanded(
             child: PageView(
               controller: _pageController,
-              physics: NeverScrollableScrollPhysics(),
+              physics: const NeverScrollableScrollPhysics(),
               children: [
                 _buildPage1(),
                 _buildPage2(),
@@ -170,10 +170,10 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           ),
           if (_errorMessage.isNotEmpty)
             Padding(
-              padding: EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.only(bottom: 10),
               child: Text(
                 _errorMessage,
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
               ),
             ),
         ],
@@ -185,7 +185,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   Widget _buildPage1() {
     return SingleChildScrollView(
       child: Padding(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,7 +202,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   Widget _buildPage2() {
     return SingleChildScrollView(
       child: Padding(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,34 +219,34 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   Widget _buildPage3() {
     return SingleChildScrollView(
       child: Padding(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("What is your gender?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,)),
-            SizedBox(height: 20),
+            const Text("What is your gender?", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,)),
+            const SizedBox(height: 20),
             DropdownButtonFormField<String>(
               value: _gender, // Initially null, so hint text will show
               decoration: InputDecoration(
                 border: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey, width: 2.0),
+                  borderSide: const BorderSide(color: Colors.grey, width: 2.0),
                   borderRadius: BorderRadius.circular(8.0),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey, width: 2.0),
+                  borderSide: const BorderSide(color: Colors.grey, width: 2.0),
                   borderRadius: BorderRadius.circular(8.0),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.black, width: 2.0),
+                  borderSide: const BorderSide(color: Colors.black, width: 2.0),
                   borderRadius: BorderRadius.circular(8.0),
                 ),
-                contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+                contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
               ),
               dropdownColor: Colors.white, // Ensure the dropdown background is white
               hint: Text(
                 "Select your gender",
-                style: TextStyle(color: Colors.black.withOpacity(0.5)), // Lighter hint text
+                style: TextStyle(color: Colors.black.withAlpha((0.4 * 255).toInt())), // Lighter hint text
               ),
               items: ["Male", "Female"].map((String value) {
                 return DropdownMenuItem<String>(
@@ -256,7 +256,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
               }).toList(),
               onChanged: (value) => setState(() => _gender = value),
             ),
-            SizedBox(height: 30),
+            const SizedBox(height: 30),
             Center(child: CustomButton(text: "Next", onPressed: _nextPage)),
           ],
         ),
@@ -268,7 +268,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   Widget _buildPage4() {
     return SingleChildScrollView(
       child: Padding(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,13 +286,13 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   Widget _buildPage5() {
     return SingleChildScrollView(
       child: Padding(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("What is your level of activity?",
+            const Text("What is your level of activity?",
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
 
             _buildActivityOption("Sedentary", "Little or no exercise, mostly sitting."),
             _buildActivityOption("Lightly Active", "Light exercise 1-3 days per week."),
@@ -300,7 +300,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
             _buildActivityOption("Active", "Hard exercise 6-7 days per week."),
             _buildActivityOption("Very Active", "Very intense daily exercise or physical job."),
 
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Center(child: CustomButton(text: "Next", onPressed: _nextPage)),
           ],
         ),
@@ -312,7 +312,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   Widget _buildPage6() {
     return SingleChildScrollView(
       child: Padding(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -333,15 +333,15 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   Widget _buildPage7() {
     return SingleChildScrollView( // Wrap content to allow scrolling
       child: Padding(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Do you have any dietary preference(s)?",
+            const Text("Do you have any dietary preference(s)?",
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,)
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             _buildCheckbox("None"),
             _buildCheckbox("Low Protein"),
             _buildCheckbox("Low Cholesterol"),
@@ -350,7 +350,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
             _buildCheckbox("Indian"),
             _buildCheckbox("European"),
             _buildCheckbox("Mexican"),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Center(child: CustomButton(text: "Finish", onPressed: _nextPage)),
           ],
         ),
@@ -365,9 +365,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start, // Align text to left
         children: [
-          Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)), // Activity Level
-          SizedBox(height: 4), // Small spacing
-          Text(description, style: TextStyle(fontSize: 14, color: Colors.black54)), // Description
+          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)), // Activity Level
+          const SizedBox(height: 4), // Small spacing
+          Text(description, style: const TextStyle(fontSize: 14, color: Colors.black54)), // Description
         ],
       ),
       value: title,
@@ -379,7 +379,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           });
         }
       },
-      contentPadding: EdgeInsets.symmetric(vertical: 2), // Reduce padding
+      contentPadding: const EdgeInsets.symmetric(vertical: 2), // Reduce padding
     );
   }
 

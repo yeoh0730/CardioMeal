@@ -2,7 +2,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:project/HomePage.dart';
 import 'package:project/LoginPage.dart';
 import 'package:project/QuestionnaireScreen.dart';
 
@@ -64,40 +63,40 @@ class _SignUpPageState extends State<SignUpPage> {
       body: Center(
         child: SingleChildScrollView(
           child: Padding(
-            padding: EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Image.asset('assets/logo.png', width: 180),
-                SizedBox(height: 20),
-                Text("Get Started", style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
-                SizedBox(height: 5),
-                Text("by creating a free account.", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w100)),
-                SizedBox(height: 40),
+                const SizedBox(height: 20),
+                const Text("Get Started", style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 5),
+                const Text("by creating a free account.", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w100)),
+                const SizedBox(height: 40),
 
                 // Email TextField
                 Container(
                   decoration: BoxDecoration(
-                    color: Color.fromRGBO(196, 196, 196, 0.2),
+                    color: const Color.fromRGBO(196, 196, 196, 0.2),
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: TextField(
                     controller: _emailController,
                     decoration: InputDecoration(
                       hintText: "Enter your email",
-                      hintStyle: TextStyle(color: Colors.black.withOpacity(0.4)),
-                      prefixIcon: Icon(Icons.email, color: Colors.grey),
+                      hintStyle: TextStyle(color: Colors.black.withAlpha((0.4 * 255).toInt())),
+                      prefixIcon: const Icon(Icons.email, color: Colors.grey),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
                     ),
                   ),
                 ),
-                SizedBox(height: 15),
+                const SizedBox(height: 15),
 
                 // Password TextField
                 Container(
                   decoration: BoxDecoration(
-                    color: Color.fromRGBO(196, 196, 196, 0.2),
+                    color: const Color.fromRGBO(196, 196, 196, 0.2),
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: TextField(
@@ -105,8 +104,8 @@ class _SignUpPageState extends State<SignUpPage> {
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
                       hintText: "Create a password",
-                      hintStyle: TextStyle(color: Colors.black.withOpacity(0.4)),
-                      prefixIcon: Icon(Icons.lock, color: Colors.grey),
+                      hintStyle: TextStyle(color: Colors.black.withAlpha((0.4 * 255).toInt())),
+                      prefixIcon: const Icon(Icons.lock, color: Colors.grey),
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscurePassword ? Icons.visibility_off : Icons.visibility,
@@ -119,35 +118,35 @@ class _SignUpPageState extends State<SignUpPage> {
                         },
                       ),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
                     ),
                   ),
                 ),
-                SizedBox(height: 30),
+                const SizedBox(height: 30),
 
                 _isLoading
-                    ? CircularProgressIndicator()
+                    ? const CircularProgressIndicator()
                     : ElevatedButton(
                   onPressed: _signUp,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color.fromRGBO(244, 67, 54, 1),
+                    backgroundColor: const Color.fromRGBO(244, 67, 54, 1),
                     foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
                   ),
-                  child: Text('Sign Up', style: TextStyle(color: Colors.white)),
+                  child: const Text('Sign Up', style: TextStyle(color: Colors.white)),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
 
                 RichText(
                   text: TextSpan(
                     children: [
-                      TextSpan(
+                      const TextSpan(
                         text: "Already have an account? ",
                         style: TextStyle(color: Colors.black, fontFamily: 'Poppins'),
                       ),
                       TextSpan(
                         text: "Login",
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.red,
                         ),
                         recognizer: TapGestureRecognizer()..onTap = () {
@@ -163,7 +162,7 @@ class _SignUpPageState extends State<SignUpPage> {
                     padding: const EdgeInsets.only(top: 10),
                     child: Text(
                       _errorMessage,
-                      style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                      style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
                     ),
                   ),
               ],

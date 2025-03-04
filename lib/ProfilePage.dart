@@ -38,12 +38,12 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: userData == null
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : Column(
         children: [
           // Profile Header Section
           Container(
-            padding: EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+            padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
             child: Column(
               children: [
                 CircleAvatar(
@@ -51,14 +51,14 @@ class _ProfilePageState extends State<ProfilePage> {
                   backgroundColor: Colors.grey[300],
                   backgroundImage: userData?['profileImage'] != null
                       ? NetworkImage(userData!['profileImage'])
-                      : AssetImage('assets/logo.png') as ImageProvider,
+                      : const AssetImage('assets/logo.png') as ImageProvider,
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 Text(
                   userData?['name'] ?? 'User Name',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -76,7 +76,7 @@ class _ProfilePageState extends State<ProfilePage> {
           // Account Options Section
           Expanded(
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
                   _buildOption(Icons.person, "View Profile", () {
@@ -109,15 +109,15 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildUserInfo(String title, String value) {
     return Column(
       children: [
-        Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        Text(title, style: TextStyle(fontSize: 14, color: Colors.grey)),
+        Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        Text(title, style: const TextStyle(fontSize: 14, color: Colors.grey)),
       ],
     );
   }
 
   Widget _divider() {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 15),
+      padding: const EdgeInsets.symmetric(horizontal: 15),
       child: Container(height: 30, width: 1, color: Colors.grey),
     );
   }
@@ -125,8 +125,8 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildOption(IconData icon, String title, VoidCallback onTap, {bool isLogout = false}) {
     return ListTile(
       leading: Icon(icon, color: isLogout ? Colors.red : Colors.black),
-      title: Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-      trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+      title: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+      trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
       onTap: onTap,
     );
   }

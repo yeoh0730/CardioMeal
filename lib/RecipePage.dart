@@ -105,25 +105,25 @@ class _RecipePageState extends State<RecipePage> {
             onChanged: _filterRecipes,
             decoration: InputDecoration(
               hintText: 'Search recipes',
-              hintStyle: TextStyle(color: Colors.grey),
+              hintStyle: const TextStyle(color: Colors.grey),
               border: InputBorder.none,
-              prefixIcon: Icon(Icons.search, color: Colors.grey),
+              prefixIcon: const Icon(Icons.search, color: Colors.grey),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
-                icon: Icon(Icons.clear, color: Colors.grey),
+                icon: const Icon(Icons.clear, color: Colors.grey),
                 onPressed: () {
                   _searchController.clear();
                   _filterRecipes('');
                 },
               )
                   : null,
-              contentPadding: EdgeInsets.symmetric(vertical: 10),
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
             ),
           ),
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.filter_alt_rounded, color: Colors.black),
+            icon: const Icon(Icons.filter_alt_rounded, color: Colors.black),
             onPressed: () {
               // Filter action here
             },
@@ -136,7 +136,7 @@ class _RecipePageState extends State<RecipePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // **NEW** Recipes Title
-            Text(
+            const Text(
               "Recipes",
               style: TextStyle(
                 fontSize: 22,
@@ -144,13 +144,13 @@ class _RecipePageState extends State<RecipePage> {
                 color: Colors.black,
               ),
             ),
-            SizedBox(height: 16), // Add spacing before grid
+            const SizedBox(height: 16), // Add spacing before grid
 
             // Recipe Grid
             Expanded(
               child: GridView.builder(
                 itemCount: filteredRecipes.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   childAspectRatio: 3 / 4,
                   crossAxisSpacing: 10,

@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class EditDietPreferencePage extends StatefulWidget {
   final Map<String, dynamic>? userData;
-  EditDietPreferencePage({required this.userData});
+  const EditDietPreferencePage({required this.userData});
 
   @override
   _EditDietPreferencePageState createState() => _EditDietPreferencePageState();
@@ -55,18 +55,18 @@ class _EditDietPreferencePageState extends State<EditDietPreferencePage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text("Edit Diet Preferences"),
+        title: const Text("Edit Diet Preferences"),
         backgroundColor: Colors.white,
         elevation: 0,
       ),
       body: Padding(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Select your dietary preferences:",
+            const Text("Select your dietary preferences:",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
 
             // Generate checkboxes dynamically
             ..._dietaryOptions.map((preference) => CheckboxListTile(
@@ -77,11 +77,11 @@ class _EditDietPreferencePageState extends State<EditDietPreferencePage> {
               },
             )),
 
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Center(
               child: ElevatedButton(
                 onPressed: _saveDietPreferences,
-                child: Text("Save Changes"),
+                child: const Text("Save Changes"),
               ),
             ),
           ],

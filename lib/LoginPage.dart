@@ -39,24 +39,24 @@ class _LoginPageState extends State<LoginPage> {
       body: Center(
         child: SingleChildScrollView(
           child: Padding(
-            padding: EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Image.asset('assets/logo.png', width: 180),
-                SizedBox(height: 20),
-                Text("Welcome To CardioMeal", style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
-                SizedBox(height: 5),
-                Text("sign in to access your account.", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w100)),
-                SizedBox(height: 40),
+                const SizedBox(height: 20),
+                const Text("Welcome To CardioMeal", style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 5),
+                const Text("sign in to access your account.", style: TextStyle(fontSize: 13, fontWeight: FontWeight.w100)),
+                const SizedBox(height: 40),
 
                 // Email Input
                 _buildInputField(_emailController, "Enter your email", Icons.email),
-                SizedBox(height: 15),
+                const SizedBox(height: 15),
 
                 // Password Input
                 _buildPasswordInput(),
-                SizedBox(height: 30),
+                const SizedBox(height: 30),
 
                 // ✅ Reusable Login Button
                 CustomButton(
@@ -64,17 +64,17 @@ class _LoginPageState extends State<LoginPage> {
                   onPressed: _signIn,
                 ),
 
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 RichText(
                   text: TextSpan(
                     children: [
-                      TextSpan(
+                      const TextSpan(
                         text: "Don’t have an account? ",
                         style: TextStyle(color: Colors.black, fontFamily: 'Poppins'),
                       ),
                       TextSpan(
                         text: "Sign Up",
-                        style: TextStyle(color: Colors.red),
+                        style: const TextStyle(color: Colors.red),
                         recognizer: TapGestureRecognizer()..onTap = () {
                           Navigator.push(context, MaterialPageRoute(builder: (context) => SignUpPage()));
                         },
@@ -84,7 +84,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 Text(
                   _errorMessage,
-                  style: TextStyle(color: Colors.red),
+                  style: const TextStyle(color: Colors.red),
                 ),
               ],
             ),
@@ -98,17 +98,17 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildInputField(TextEditingController controller, String hintText, IconData icon) {
     return Container(
       decoration: BoxDecoration(
-        color: Color.fromRGBO(196, 196, 196, 0.2),
+        color: const Color.fromRGBO(196, 196, 196, 0.2),
         borderRadius: BorderRadius.circular(15),
       ),
       child: TextField(
         controller: controller,
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: TextStyle(color: Colors.black.withOpacity(0.4)),
+          hintStyle: TextStyle(color: Colors.black.withAlpha((0.4 * 255).toInt())),
           prefixIcon: Icon(icon, color: Colors.grey),
           border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+          contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
         ),
       ),
     );
@@ -118,7 +118,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildPasswordInput() {
     return Container(
       decoration: BoxDecoration(
-        color: Color.fromRGBO(196, 196, 196, 0.2),
+        color: const Color.fromRGBO(196, 196, 196, 0.2),
         borderRadius: BorderRadius.circular(15),
       ),
       child: TextField(
@@ -126,8 +126,8 @@ class _LoginPageState extends State<LoginPage> {
         obscureText: _obscurePassword,
         decoration: InputDecoration(
           hintText: "Password",
-          hintStyle: TextStyle(color: Colors.black.withOpacity(0.4)),
-          prefixIcon: Icon(Icons.lock, color: Colors.grey),
+          hintStyle: TextStyle(color: Colors.black.withAlpha((0.4 * 255).toInt())),
+          prefixIcon: const Icon(Icons.lock, color: Colors.grey),
           suffixIcon: IconButton(
             icon: Icon(
               _obscurePassword ? Icons.visibility_off : Icons.visibility,
@@ -140,7 +140,7 @@ class _LoginPageState extends State<LoginPage> {
             },
           ),
           border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+          contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
         ),
       ),
     );

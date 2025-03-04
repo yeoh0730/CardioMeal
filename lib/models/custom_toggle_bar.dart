@@ -4,7 +4,7 @@ class CustomToggleBar extends StatelessWidget {
   final bool isSelected;
   final Function(bool) onToggle;
 
-  CustomToggleBar({required this.isSelected, required this.onToggle});
+  const CustomToggleBar({required this.isSelected, required this.onToggle});
 
   @override
   Widget build(BuildContext context) {
@@ -19,14 +19,14 @@ class CustomToggleBar extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: isSelected ? Colors.red : Colors.grey[300],
                 foregroundColor: isSelected ? Colors.white : Colors.black,
-                shape: RoundedRectangleBorder(
+                shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(20),
                     bottomLeft: Radius.circular(20),
                   ),
                 ),
               ),
-              child: Text('Log Meal'),
+              child: const Text('Log Meal'),
             ),
           ),
           Expanded(
@@ -35,14 +35,14 @@ class CustomToggleBar extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: !isSelected ? Colors.red : Colors.grey[300],
                 foregroundColor: !isSelected ? Colors.white : Colors.black,
-                shape: RoundedRectangleBorder(
+                shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.only(
                     topRight: Radius.circular(20),
                     bottomRight: Radius.circular(20),
                   ),
                 ),
               ),
-              child: Text('Dashboard'),
+              child: const Text('Dashboard'),
             ),
           ),
         ],

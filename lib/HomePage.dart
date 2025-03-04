@@ -71,7 +71,7 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
-        title: Text(
+        title: const Text(
           'Hi Yeoh!',
           style: TextStyle(
             fontSize: 25,
@@ -91,13 +91,13 @@ class _HomePageState extends State<HomePage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  const Text(
                     "Today's Progress",
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   TextButton(
                     onPressed: () {},
-                    child: Text(
+                    child: const Text(
                       "View more",
                       style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
                     ),
@@ -117,10 +117,10 @@ class _HomePageState extends State<HomePage> {
                         radius: 40.0,
                         lineWidth: 8.0,
                         percent: 0.1,
-                        center: Text("10%"),
+                        center: const Text("10%"),
                         progressColor: Colors.yellow,
-                        footer: Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
+                        footer: const Padding(
+                          padding: EdgeInsets.only(top: 8.0),
                           child: Text("Sodium"),
                         ),
                       ),
@@ -128,10 +128,10 @@ class _HomePageState extends State<HomePage> {
                         radius: 40.0,
                         lineWidth: 8.0,
                         percent: 0.65,
-                        center: Text("65%"),
+                        center: const Text("65%"),
                         progressColor: Colors.blue,
-                        footer: Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
+                        footer: const Padding(
+                          padding: EdgeInsets.only(top: 8.0),
                           child: Text("Fat"),
                         ),
                       ),
@@ -139,10 +139,10 @@ class _HomePageState extends State<HomePage> {
                         radius: 40.0,
                         lineWidth: 8.0,
                         percent: 0.85,
-                        center: Text("85%"),
+                        center: const Text("85%"),
                         progressColor: Colors.purple,
-                        footer: Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
+                        footer: const Padding(
+                          padding: EdgeInsets.only(top: 8.0),
                           child: Text("Carbs"),
                         ),
                       ),
@@ -151,22 +151,22 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
 
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
 
               // Recommendations Header
-              Text(
+              const Text(
                 "Recommendations",
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
 
               // Show Loading Indicator While Fetching Data
               _recipes.isEmpty
-                  ? Center(child: CircularProgressIndicator())
+                  ? const Center(child: CircularProgressIndicator())
                   : GridView.builder(
                 shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   childAspectRatio: 3 / 4,
                   crossAxisSpacing: 10,

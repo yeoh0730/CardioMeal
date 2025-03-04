@@ -32,7 +32,7 @@ class AuthenticationWrapper extends StatelessWidget {
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator()); // Show loading screen
+          return const Center(child: CircularProgressIndicator()); // Show loading screen
         }
         if (snapshot.hasData) {
           // Force navigation reset on login
@@ -71,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,
         currentIndex: _currentIndex,
-        selectedItemColor: Color.fromRGBO(244, 67, 54, 1),
+        selectedItemColor: const Color.fromRGBO(244, 67, 54, 1),
         unselectedItemColor: Colors.grey,
         onTap: (index) {
           setState(() {
@@ -79,19 +79,19 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         },
         items: [
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.home),
             label: 'Home',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.book),
             label: 'Diary',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.restaurant_menu),
             label: 'Recipes',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: 'Profile',
           ),

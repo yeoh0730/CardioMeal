@@ -7,7 +7,6 @@ class DashboardView extends StatefulWidget {
 }
 
 class _DashboardViewState extends State<DashboardView> {
-  int _currentIndex = 1; // Set default index for "Diary" tab
 
   @override
   Widget build(BuildContext context) {
@@ -20,9 +19,9 @@ class _DashboardViewState extends State<DashboardView> {
             child: Column(
               children: [
                 _buildProgressCard("Today's Progress"),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 _buildProgressCard("Weekly Progress"),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 _buildCholesterolChart(),
               ],
             ),
@@ -44,9 +43,9 @@ class _DashboardViewState extends State<DashboardView> {
           children: [
             Text(
               title,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
 
             Row(
               children: [
@@ -55,7 +54,7 @@ class _DashboardViewState extends State<DashboardView> {
                   width: 50,
                   height: 50,
                 ),
-                SizedBox(width: 10),
+                const SizedBox(width: 10),
 
                 // ✅ Wrap progress indicators to ensure proper spacing
                 Expanded(
@@ -96,13 +95,13 @@ class _DashboardViewState extends State<DashboardView> {
                 strokeWidth: 6,
               ),
               Center(
-                child: Text("${(value * 100).toInt()}%", style: TextStyle(fontSize: 12)),
+                child: Text("${(value * 100).toInt()}%", style: const TextStyle(fontSize: 12)),
               ),
             ],
           ),
         ),
-        SizedBox(height: 5),
-        Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 5),
+        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
       ],
     );
   }
@@ -119,32 +118,32 @@ class _DashboardViewState extends State<DashboardView> {
           children: [
             Row(
               children: [
-                Text("Cholesterol Level", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                Spacer(),
+                const Text("Cholesterol Level", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Spacer(),
                 ElevatedButton(
                   onPressed: () {},
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
                   ),
-                  child: Text("Update", style: TextStyle(fontSize: 12)),
+                  child: const Text("Update", style: TextStyle(fontSize: 12)),
                 ),
               ],
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             SizedBox(
               height: 150,
               child: LineChart(
                 LineChartData(
-                  gridData: FlGridData(show: false),
+                  gridData: const FlGridData(show: false),
                   borderData: FlBorderData(show: false),
-                  titlesData: FlTitlesData(show: false),
+                  titlesData: const FlTitlesData(show: false),
                   lineBarsData: [
                     LineChartBarData(
                       isCurved: true,
                       color: Colors.blue,
                       barWidth: 3,
-                      spots: [FlSpot(1, 50), FlSpot(2, 60), FlSpot(3, 70), FlSpot(4, 75), FlSpot(5, 90), FlSpot(6, 100)],
+                      spots: [const FlSpot(1, 50), const FlSpot(2, 60), const FlSpot(3, 70), const FlSpot(4, 75), const FlSpot(5, 90), const FlSpot(6, 100)],
                     ),
                   ],
                 ),

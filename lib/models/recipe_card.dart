@@ -5,7 +5,7 @@ class RecipeCard extends StatelessWidget {
   final String imageUrl;
   final String description;
 
-  RecipeCard({required this.title, required this.imageUrl, required this.description});
+  const RecipeCard({required this.title, required this.imageUrl, required this.description});
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +19,7 @@ class RecipeCard extends StatelessWidget {
           Stack(
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.vertical(
+                borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(10),
                 ),
                 child: Image.network(
@@ -33,7 +33,7 @@ class RecipeCard extends StatelessWidget {
                       height: 120,
                       width: double.infinity,
                       color: Colors.grey[300],
-                      child: Center(child: CircularProgressIndicator()),
+                      child: const Center(child: CircularProgressIndicator()),
                     );
                   },
                   errorBuilder: (context, error, stackTrace) {
@@ -41,12 +41,12 @@ class RecipeCard extends StatelessWidget {
                       height: 120,
                       width: double.infinity,
                       color: Colors.grey[300],
-                      child: Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+                      child: const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
                     );
                   },
                 ),
               ),
-              Positioned(
+              const Positioned(
                 top: 8,
                 right: 8,
                 child: Icon(
@@ -60,7 +60,7 @@ class RecipeCard extends StatelessWidget {
             padding: const EdgeInsets.all(8.0),
             child: Text(
               title,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
