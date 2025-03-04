@@ -51,7 +51,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   backgroundColor: Colors.grey[300],
                   backgroundImage: userData?['profileImage'] != null
                       ? NetworkImage(userData!['profileImage'])
-                      : AssetImage('assets/default_profile.png') as ImageProvider,
+                      : AssetImage('assets/logo.png') as ImageProvider,
                 ),
                 SizedBox(height: 10),
                 Text(
