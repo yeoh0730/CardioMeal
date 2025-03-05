@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'services/api_service.dart';
 import 'models/recipe_card.dart'; // Import the RecipeCard model
@@ -10,11 +12,33 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<Map<String, dynamic>> _recipes = []; // Store API response
+  String _username = "User"; // Default username before fetching
 
   @override
   void initState() {
     super.initState();
+    _fetchUserData();
     _fetchRecommendations(); // Fetch data when screen loads
+  }
+
+  Future<void> _fetchUserData() async {
+    try {
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection("users")
+            .doc(user.uid)
+            .get();
+
+        if (userDoc.exists) {
+          setState(() {
+            _username = userDoc["name"] ?? "User";  // ✅ Update username
+          });
+        }
+      }
+    } catch (error) {
+      print("⚠️ Error fetching user data: $error");
+    }
   }
 
   Future<void> _fetchRecommendations() async {
@@ -71,8 +95,8 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
-        title: const Text(
-          'Hi Yeoh!',
+        title: Text(
+          'Hi $_username!',
           style: TextStyle(
             fontSize: 25,
             fontWeight: FontWeight.bold,

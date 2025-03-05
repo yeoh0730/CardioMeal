@@ -46,7 +46,8 @@ class _EditDietPreferencePageState extends State<EditDietPreferencePage> {
       await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
         'dietaryPreferences': _selectedDietPreferences,
       });
-      Navigator.pop(context);
+
+      Navigator.pop(context, true);  // ✅ Return true to indicate update
     }
   }
 

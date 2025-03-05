@@ -85,7 +85,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       MaterialPageRoute(
                         builder: (context) => EditProfilePage(userData: userData),
                       ),
-                    );
+                    ).then((_) {  // Refresh data after returning
+                      _fetchUserData();  // Fetch updated data when coming back
+                    });
                   }),
                   _buildOption(Icons.notifications, "Notification", () {}),
                   _buildOption(Icons.restaurant_menu, "View Dietary Preferences", () {
@@ -94,7 +96,11 @@ class _ProfilePageState extends State<ProfilePage> {
                       MaterialPageRoute(
                         builder: (context) => EditDietPreferencePage(userData: userData),
                       ),
-                    );
+                    ).then((updated) {  // ✅ Refresh data after returning
+                      if (updated == true) {
+                        _fetchUserData();  // Fetch updated data when coming back
+                      }
+                    });
                   }),
                   _buildOption(Icons.logout, "Logout", _logout, isLogout: true),
                 ],
