@@ -207,7 +207,8 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text("Recipe Details")),
+      // appBar: AppBar(title: Text(recipeDetails!["Name"] ?? "Recipe")),
+      appBar: AppBar(title: Text('Recipe Details')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
