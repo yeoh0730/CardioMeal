@@ -4,12 +4,26 @@ class RecipeCard extends StatelessWidget {
   final String title;
   final String imageUrl;
   final String description;
+  final String recipeId;
 
-  const RecipeCard({required this.title, required this.imageUrl, required this.description});
+  const RecipeCard({
+    required this.title,
+    required this.imageUrl,
+    required this.description,
+    required this.recipeId,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return GestureDetector(
+        onTap: () {
+          Navigator.pushNamed(
+            context,
+            '/recipeDetail', // ✅ Route to the detail page
+            arguments: recipeId, // ✅ Pass recipeId as an argument
+          );
+        },
+    child: Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
       ),
@@ -68,6 +82,7 @@ class RecipeCard extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }

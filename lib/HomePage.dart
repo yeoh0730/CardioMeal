@@ -51,6 +51,7 @@ class _HomePageState extends State<HomePage> {
 
         if (imageUrl.isNotEmpty) {
           formattedRecipes.add({
+            "RecipeId": recipe["RecipeId"] ?? "",
             "Name": recipe["Name"] ?? "No Name",
             "Images": imageUrl,
             "Description": recipe["Description"] ?? "",
@@ -204,6 +205,7 @@ class _HomePageState extends State<HomePage> {
                     title: recipe["Name"],
                     imageUrl: recipe["Images"],
                     description: recipe["Description"],
+                    recipeId: recipe["RecipeId"].toString(),
                   );
                 },
               ),

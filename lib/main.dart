@@ -5,6 +5,7 @@ import 'package:project/HomePage.dart';
 import 'package:project/DiaryPage.dart';
 import 'package:project/ProfilePage.dart';
 import 'package:project/RecipePage.dart';
+import 'package:project/RecipeDetailPage.dart';
 import 'LoginPage.dart';
 
 void main() async {
@@ -19,7 +20,18 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(fontFamily: 'Poppins'),
-      home: AuthenticationWrapper(),
+      routes: {
+        '/': (context) => AuthenticationWrapper(),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/recipeDetail') {
+          final recipeId = settings.arguments as String;
+          return MaterialPageRoute(
+            builder: (context) => RecipeDetailPage(recipeId: recipeId), // ✅ Pass recipeId correctly
+          );
+        }
+        return null;
+      },
     );
   }
 }

@@ -33,6 +33,7 @@ class _RecipePageState extends State<RecipePage> {
 
         if (imageUrl.isNotEmpty) {
           loadedRecipes.add({
+            "RecipeId": doc.id,
             "Name": recipe["Name"] ?? "No Name",
             "Images": imageUrl,
             "Description": recipe["Description"] ?? "",
@@ -162,6 +163,7 @@ class _RecipePageState extends State<RecipePage> {
                     title: recipe["Name"],
                     imageUrl: recipe["Images"],
                     description: recipe["Description"],
+                    recipeId: recipe["RecipeId"],
                   );
                 },
               ),

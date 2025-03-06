@@ -45,9 +45,17 @@ class ApiService {
     if (response.statusCode == 200) {
       final decodedResponse = jsonDecode(response.body);
       if (decodedResponse is List) {
-        return decodedResponse;  // ✅ Return list directly if valid
+        // ✅ Ensure `RecipeId` is treated as a string in Flutter
+        return decodedResponse.map((recipe) {
+          return {
+            "RecipeId": recipe["RecipeId"].toString(), // ✅ Ensure RecipeId is a string
+            "Name": recipe["Name"] ?? "Unknown",
+            "Images": recipe["Images"] ?? "",
+            "Description": recipe["Description"] ?? "",
+          };
+        }).toList();
       } else if (decodedResponse is Map && decodedResponse.containsKey("message")) {
-        throw Exception(decodedResponse["message"]);  // Handle API messages
+        throw Exception(decodedResponse["message"]);
       } else {
         throw Exception("Unexpected API response format");
       }
