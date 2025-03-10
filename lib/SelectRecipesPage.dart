@@ -1,0 +1,156 @@
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+class SelectRecipesPage extends StatefulWidget {
+  final String mealType; // Meal type (Breakfast, Lunch, etc.)
+  final DateTime selectedDate; // Selected date
+
+  const SelectRecipesPage({required this.mealType, required this.selectedDate});
+
+  @override
+  _SelectRecipesPageState createState() => _SelectRecipesPageState();
+}
+
+class _SelectRecipesPageState extends State<SelectRecipesPage> {
+  List<Map<String, dynamic>> _recipes = [];
+  List<Map<String, dynamic>> _filteredRecipes = [];
+  List<Map<String, dynamic>> _selectedRecipes = [];
+  TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRecipes();
+  }
+
+  Future<void> _fetchRecipes() async {
+    QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('tastyRecipes').get();
+    List<Map<String, dynamic>> fetchedRecipes =
+    snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+
+    setState(() {
+      _recipes = fetchedRecipes;
+      _filteredRecipes = fetchedRecipes;
+    });
+  }
+
+  void _filterRecipes(String query) {
+    setState(() {
+      _filteredRecipes = _recipes
+          .where((recipe) => recipe["Name"].toLowerCase().contains(query.toLowerCase()))
+          .toList();
+    });
+  }
+
+  void _toggleSelection(Map<String, dynamic> recipe) {
+    setState(() {
+      if (_selectedRecipes.contains(recipe)) {
+        _selectedRecipes.remove(recipe);
+      } else {
+        _selectedRecipes.add(recipe);
+      }
+    });
+  }
+
+  Future<void> _confirmSelection() async {
+    if (_selectedRecipes.isEmpty) {
+      Navigator.pop(context, false); // Return false if no selection
+      return;
+    }
+
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    String formattedDate = widget.selectedDate.toIso8601String().split("T")[0]; // YYYY-MM-DD format
+    CollectionReference mealsRef = FirebaseFirestore.instance
+        .collection("users")
+        .doc(user.uid)
+        .collection("loggedMeals");
+
+    // Compute total nutrition
+    double totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
+
+    List<Map<String, dynamic>> mealFoods = _selectedRecipes.map((recipe) {
+      totalCalories += recipe["Calories"] ?? 0;
+      totalProtein += recipe["ProteinContent"] ?? 0;
+      totalCarbs += recipe["CarbohydrateContent"] ?? 0;
+      totalFat += recipe["FatContent"] ?? 0;
+
+      return {
+        "name": recipe["Name"],
+        "calories": recipe["Calories"] ?? 0,
+        "protein": recipe["ProteinContent"] ?? 0,
+        "carbs": recipe["CarbohydrateContent"] ?? 0,
+        "fat": recipe["FatContent"] ?? 0
+      };
+    }).toList();
+
+    // Check if meal for the same date & meal type exists
+    QuerySnapshot existingMeals = await mealsRef
+        .where("date", isEqualTo: formattedDate)
+        .where("mealType", isEqualTo: widget.mealType)
+        .get();
+
+    if (existingMeals.docs.isNotEmpty) {
+      // Update existing meal
+      DocumentReference mealDoc = existingMeals.docs.first.reference;
+      await mealDoc.update({
+        "foods": FieldValue.arrayUnion(mealFoods),
+        "totalCalories": FieldValue.increment(totalCalories),
+        "totalProtein": FieldValue.increment(totalProtein),
+        "totalCarbs": FieldValue.increment(totalCarbs),
+        "totalFat": FieldValue.increment(totalFat),
+      });
+    } else {
+      // Add a new meal
+      await mealsRef.add({
+        "mealType": widget.mealType,
+        "date": formattedDate,
+        "foods": mealFoods,
+        "totalCalories": totalCalories,
+        "totalProtein": totalProtein,
+        "totalCarbs": totalCarbs,
+        "totalFat": totalFat,
+      });
+    }
+
+    Navigator.pop(context, true); // Return true if selection added
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Select Recipes")),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: const InputDecoration(labelText: "Search Recipes"),
+              onChanged: _filterRecipes,
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: _filteredRecipes.length,
+              itemBuilder: (context, index) {
+                final recipe = _filteredRecipes[index];
+                return CheckboxListTile(
+                  title: Text(recipe["Name"]),
+                  value: _selectedRecipes.contains(recipe),
+                  onChanged: (bool? selected) => _toggleSelection(recipe),
+                );
+              },
+            ),
+          ),
+          ElevatedButton(
+            onPressed: _confirmSelection,
+            child: const Text("Log Selected Recipes"),
+          ),
+        ],
+      ),
+    );
+  }
+}
