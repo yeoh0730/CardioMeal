@@ -22,7 +22,7 @@ class _RecipePageState extends State<RecipePage> {
   void _fetchRecipes() async {
     try {
       QuerySnapshot snapshot =
-      await FirebaseFirestore.instance.collection('recipes').get();
+      await FirebaseFirestore.instance.collection('tastyRecipes').get();
       List<Map<String, dynamic>> loadedRecipes = [];
 
       for (var doc in snapshot.docs) {

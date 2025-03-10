@@ -14,7 +14,7 @@ class RecipeDetailPage extends StatefulWidget {
 class _RecipeDetailPageState extends State<RecipeDetailPage> {
   Map<String, dynamic>? recipeDetails;
   bool isLoading = true;
-  final PageController _pageController = PageController();  // ✅ Track page index
+  final PageController _pageController = PageController();
 
   @override
   void initState() {
@@ -27,19 +27,15 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
 
     try {
       DocumentSnapshot doc = await FirebaseFirestore.instance
-          .collection('recipes')
-          .doc(widget.recipeId.toString())  // ✅ Ensure `recipeId` is a string
+          .collection('tastyRecipes')
+          .doc(widget.recipeId.toString())
           .get();
 
       if (doc.exists) {
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
 
-        // ✅ Process images (ensure it handles both single and multiple images)
         List<String> imageUrls = _cleanImageUrls(data["Images"]);
-
-        // ✅ Convert `RecipeIngredientParts`, `RecipeIngredientQuantities`, `RecipeInstructions` to lists safely
         List<String> ingredients = _convertToList(data["RecipeIngredientParts"]);
-        List<String> quantities = _convertToList(data["RecipeIngredientQuantities"]);
         List<String> instructions = _convertToList(data["RecipeInstructions"]);
 
         setState(() {
@@ -47,9 +43,20 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
             "Name": data["Name"] ?? "No Name",
             "Images": imageUrls,
             "Description": data["Description"] ?? "No description available.",
+            "PrepTime": data["PrepTime"] ?? "N/A",
+            "CookTime": data["CookTime"] ?? "N/A",
+            "TotalTime": data["TotalTime"] ?? "N/A",
+            "RecipeServings": data["RecipeServings"] ?? "N/A",
             "Ingredients": ingredients,
-            "Quantities": quantities,
-            "Instructions": instructions,
+            "Instructions": instructions.isNotEmpty ? instructions.sublist(0, instructions.length - 1) : [],
+            "Calories": data["Calories"].toString(),
+            "FatContent": data["FatContent"].toString(),
+            "CarbohydrateContent": data["CarbohydrateContent"].toString(),
+            "FiberContent": data["FiberContent"].toString(),
+            "SugarContent": data["SugarContent"].toString(),
+            "ProteinContent": data["ProteinContent"].toString(),
+            "SodiumContent": data["SodiumContent"].toString(),
+            "CholesterolContent": data["CholesterolContent"].toString(),
           };
           isLoading = false;
         });
@@ -66,36 +73,27 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
     }
   }
 
-// ✅ Helper function to clean and handle multiple image URLs
   List<String> _cleanImageUrls(dynamic imagesField) {
     if (imagesField is String) {
-      return imagesField
-          .replaceAll('"', '')  // Remove extra quotes
-          .split(", ")  // Split multiple image URLs
-          .where((url) => url.startsWith("http"))  // Ensure valid URLs
-          .toList();
+      return imagesField.replaceAll('"', '').split(", ").where((url) => url.startsWith("http")).toList();
     } else if (imagesField is List) {
       return List<String>.from(imagesField);
     }
     return [];
   }
 
-// ✅ Helper function to safely convert Firestore fields to `List<String>`
   List<String> _convertToList(dynamic field) {
     if (field is List) {
-      return field.map((e) => e.toString().replaceAll('"', '').trim()).toList();
+      return field.map((e) => e.toString()).toList();  // ✅ Ensure all elements are converted to Strings
     } else if (field is String) {
-      return field
-          .replaceAll('"', '')  // Remove extra quotes
-          .split(RegExp(r',\s*'))  // Split by commas and whitespace
-          .map((e) => e.trim())  // Trim spaces
+      return RegExp(r'\"(.*?)\"')  // ✅ Extracts text inside double quotes
+          .allMatches(field)
+          .map((match) => match.group(1) ?? "")
           .toList();
     }
     return [];
   }
 
-
-  // ✅ Swipeable Image Carousel
   Widget _buildImageCarousel(List<String> imageUrls) {
     if (imageUrls.isEmpty) {
       return Container(
@@ -110,7 +108,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
         SizedBox(
           height: 250,
           child: PageView.builder(
-            controller: _pageController,  // ✅ Connect PageController
+            controller: _pageController,
             itemCount: imageUrls.length,
             itemBuilder: (context, index) {
               return ClipRRect(
@@ -131,61 +129,54 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
             },
           ),
         ),
-        const SizedBox(height: 8), // Space between image and dots
-
-        // ✅ Add Dot Indicator Below Images
+        const SizedBox(height: 8),
         SmoothPageIndicator(
           controller: _pageController,
           count: imageUrls.length,
           effect: const ExpandingDotsEffect(
             dotHeight: 8,
             dotWidth: 8,
-            activeDotColor: Color.fromRGBO(244, 67, 54, 1), // Customize dot color
+            activeDotColor: Color.fromRGBO(244, 67, 54, 1),
           ),
         ),
       ],
     );
   }
 
-  // ✅ Display Ingredients Properly
-  Widget _buildIngredientsSection(List<String> ingredients, List<String> quantities) {
+  Widget _buildNutritionInfo() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Ingredients", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const Text("Nutrition Info", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        ...List.generate(ingredients.length, (index) {
-          String quantity = (index < quantities.length) ? quantities[index] : "";  // ✅ Prevent out-of-bounds error
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text("• ", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              Expanded(
-                child: Text(
-                  "$quantity ${ingredients[index]}",
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ),
-            ],
-          );
-        }),
+        Text("Calories: ${recipeDetails?["Calories"]} kcal"),
+        Text("Fat: ${recipeDetails?["FatContent"]}g"),
+        Text("Carbs: ${recipeDetails?["CarbohydrateContent"]}g"),
+        Text("Fiber: ${recipeDetails?["FiberContent"]}g"),
+        Text("Sugar: ${recipeDetails?["SugarContent"]}g"),
+        Text("Protein: ${recipeDetails?["ProteinContent"]}g"),
+        Text("Sodium: ${recipeDetails?["SodiumContent"]}mg"),
+        Text("Cholesterol: ${recipeDetails?["CholesterolContent"]}mg"),
       ],
     );
   }
 
-  // ✅ Display Steps Properly
-  Widget _buildStepsSection(List<String> instructions) {
+  Widget _buildRecipeDetails() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Steps", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        Text("Prep Time: ${recipeDetails?["PrepTime"]}"),
+        Text("Cook Time: ${recipeDetails?["CookTime"]}"),
+        Text("Total Time: ${recipeDetails?["TotalTime"]}"),
+        Text("Servings: ${recipeDetails?["RecipeServings"]}"),
+        const SizedBox(height: 16),
+        const Text("Ingredients", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        ...List.generate(instructions.length, (index) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 6.0),
-            child: Text("${index + 1}. ${instructions[index]}", style: const TextStyle(fontSize: 16)),
-          );
-        }),
+        ...recipeDetails!["Ingredients"].map((ingredient) => Text("• $ingredient")),
+        const SizedBox(height: 16),
+        const Text("Instructions", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        ...recipeDetails!["Instructions"].asMap().entries.map((entry) => Text("${entry.key + 1}. ${entry.value}")),
       ],
     );
   }
@@ -207,25 +198,21 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
     }
 
     return Scaffold(
-      // appBar: AppBar(title: Text(recipeDetails!["Name"] ?? "Recipe")),
-      appBar: AppBar(title: Text('Recipe Details')),
+      appBar: AppBar(title: Text(recipeDetails!["Name"] ?? "Recipe Details")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildImageCarousel(recipeDetails!["Images"]),  // ✅ Swipable images
+            _buildImageCarousel(recipeDetails!["Images"]),
             const SizedBox(height: 16),
-            Text(
-              recipeDetails!["Name"] ?? "No Name",
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
+            Text(recipeDetails!["Name"], style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text(recipeDetails!["Description"], style: const TextStyle(fontSize: 16)),
             const SizedBox(height: 16),
-            _buildIngredientsSection(recipeDetails!["Ingredients"], recipeDetails!["Quantities"]), // ✅ Ingredients
+            _buildRecipeDetails(),
             const SizedBox(height: 16),
-            _buildStepsSection(recipeDetails!["Instructions"]), // ✅ Steps
+            _buildNutritionInfo(),
           ],
         ),
       ),
