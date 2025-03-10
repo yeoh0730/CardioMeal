@@ -10,7 +10,17 @@ class RecipePage extends StatefulWidget {
 class _RecipePageState extends State<RecipePage> {
   List<Map<String, dynamic>> recipes = [];
   List<Map<String, dynamic>> filteredRecipes = [];
+  List<String> selectedFilters = []; // Selected filters
   TextEditingController _searchController = TextEditingController();
+
+  final List<String> mealTypes = [
+    "Breakfast",
+    "Lunch",
+    "Dinner",
+    "Dessert",
+    "Snack",
+    "Brunch"
+  ]; // Filter options
 
   @override
   void initState() {
@@ -37,6 +47,7 @@ class _RecipePageState extends State<RecipePage> {
             "Name": recipe["Name"] ?? "No Name",
             "Images": imageUrl,
             "Description": recipe["Description"] ?? "",
+            "Keywords": recipe["Keywords"] ?? "", // Extract keywords for filtering
           });
         }
       }
@@ -55,25 +66,19 @@ class _RecipePageState extends State<RecipePage> {
   // Extracts the first valid image URL
   String extractFirstValidImage(dynamic imagesField) {
     if (imagesField == null || imagesField == "character(0)") {
-      return ""; // Ignore invalid image fields
+      return "";
     }
 
     String imagesString = imagesField.toString();
-
-    // Remove extra quotation marks if present
     imagesString = imagesString.replaceAll('"', '');
 
-    // Split by commas (in case multiple URLs exist)
     List<String> imageUrls = imagesString.split(", ");
-
-    // Check each URL and return the first valid one
     for (String url in imageUrls) {
       if (url.startsWith("https://")) {
         return url;
       }
     }
-
-    return ""; // No valid image found
+    return "";
   }
 
   // Search filter
@@ -81,6 +86,91 @@ class _RecipePageState extends State<RecipePage> {
     List<Map<String, dynamic>> results = recipes.where((recipe) {
       final name = recipe["Name"].toLowerCase();
       return name.contains(query.toLowerCase());
+    }).toList();
+
+    setState(() {
+      filteredRecipes = results;
+    });
+  }
+
+  void _openFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20), // Optional: Rounded corners
+              ),
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Filter by Meal Type"),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.black), // ✅ Close button
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: mealTypes.map((mealType) {
+                  return CheckboxListTile(
+                    title: Text(mealType),
+                    value: selectedFilters.contains(mealType),
+                    onChanged: (bool? value) {
+                      setDialogState(() {
+                        if (value == true) {
+                          selectedFilters.add(mealType);
+                        } else {
+                          selectedFilters.remove(mealType);
+                        }
+                      });
+                    },
+                  );
+                }).toList(),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      selectedFilters.clear(); // Clear filters
+                      filteredRecipes = List.from(recipes); // Show all recipes
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: const Text("Reset"),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    _applyFilter();
+                    Navigator.pop(context);
+                  },
+                  child: const Text("Apply"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Apply filter based on selected meal types
+  void _applyFilter() {
+    if (selectedFilters.isEmpty) {
+      setState(() {
+        filteredRecipes = List.from(recipes); // Show all recipes if no filters
+      });
+      return;
+    }
+
+    List<Map<String, dynamic>> results = recipes.where((recipe) {
+      String keywords = recipe["Keywords"].toString().toLowerCase();
+      return selectedFilters.any((filter) => keywords.contains(filter.toLowerCase()));
     }).toList();
 
     setState(() {
@@ -125,9 +215,7 @@ class _RecipePageState extends State<RecipePage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_alt_rounded, color: Colors.black),
-            onPressed: () {
-              // Filter action here
-            },
+            onPressed: _openFilterDialog, // Open filter dialog
           ),
         ],
       ),
@@ -136,7 +224,7 @@ class _RecipePageState extends State<RecipePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // **NEW** Recipes Title
+            // Recipes Title
             const Text(
               "Recipes",
               style: TextStyle(
