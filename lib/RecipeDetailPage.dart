@@ -48,7 +48,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
             "TotalTime": data["TotalTime"] ?? "N/A",
             "RecipeServings": data["RecipeServings"] ?? "N/A",
             "Ingredients": ingredients,
-            "Instructions": instructions.isNotEmpty ? instructions.sublist(0, instructions.length - 1) : [],
+            "Instructions": instructions,
             "Calories": data["Calories"].toString(),
             "FatContent": data["FatContent"].toString(),
             "CarbohydrateContent": data["CarbohydrateContent"].toString(),

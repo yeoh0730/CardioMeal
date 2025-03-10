@@ -15,13 +15,34 @@ class _EditDietPreferencePageState extends State<EditDietPreferencePage> {
 
   final List<String> _dietaryOptions = [
     "None",
-    "Low Protein",
-    "Low Cholesterol",
-    "Lactose Free",
+    "Alcohol-Free",
+    "Dairy-Free",
+    "Gluten-Free",
+    "Halal",
+    "Keto",
+    "High-Fiber",
+    "High-Protein",
+    "Low-Calorie",
+    "Low-Carb",
+    "Low-Fat",
+    "Low-Sugar",
+    "Vegan",
+    "Vegetarian",
     "Asian",
-    "Indian",
     "European",
-    "Mexican"
+    "Filipino",
+    "French",
+    "Fusion",
+    "German",
+    "Hawaiian",
+    "Indian",
+    "Italian",
+    "Japanese",
+    "Korean",
+    "Mexican",
+    "Taiwanese",
+    "Thai",
+    "Vietnamese"
   ];
 
   @override
@@ -69,14 +90,20 @@ class _EditDietPreferencePageState extends State<EditDietPreferencePage> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
 
-            // Generate checkboxes dynamically
-            ..._dietaryOptions.map((preference) => CheckboxListTile(
-              title: Text(preference),
-              value: _selectedDietPreferences.contains(preference),
-              onChanged: (value) {
-                _toggleDietaryPreference(preference);
-              },
-            )),
+            // ✅ Wrap checkboxes inside SingleChildScrollView to make it scrollable
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: _dietaryOptions.map((preference) => CheckboxListTile(
+                    title: Text(preference),
+                    value: _selectedDietPreferences.contains(preference),
+                    onChanged: (value) {
+                      _toggleDietaryPreference(preference);
+                    },
+                  )).toList(),
+                ),
+              ),
+            ),
 
             const SizedBox(height: 20),
             Center(
