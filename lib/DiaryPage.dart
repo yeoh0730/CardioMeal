@@ -207,9 +207,10 @@ class _DiaryPageState extends State<DiaryPage> {
               if (_selectedMeals[mealTitle]!.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(left: 16.0, top: 4.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Text("Calories: ${mealNutrition["Calories"]!.toStringAsFixed(1)}", style: const TextStyle(color: Colors.grey)),
                       Text("Sodium: ${mealNutrition["Sodium"]!.toStringAsFixed(1)} mg", style: const TextStyle(color: Colors.grey)),
                       Text("Fat: ${mealNutrition["Fat"]!.toStringAsFixed(1)} g", style: const TextStyle(color: Colors.grey)),
                       Text("Carb: ${mealNutrition["Carbohydrates"]!.toStringAsFixed(1)} g", style: const TextStyle(color: Colors.grey)),
