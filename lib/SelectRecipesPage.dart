@@ -69,18 +69,18 @@ class _SelectRecipesPageState extends State<SelectRecipesPage> {
         .collection("loggedMeals");
 
     // Compute total nutrition
-    double totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
+    double totalCalories = 0, totalSodium = 0, totalCarbs = 0, totalFat = 0;
 
     List<Map<String, dynamic>> mealFoods = _selectedRecipes.map((recipe) {
       totalCalories += recipe["Calories"] ?? 0;
-      totalProtein += recipe["ProteinContent"] ?? 0;
+      totalSodium += recipe["SodiumContent"] ?? 0;
       totalCarbs += recipe["CarbohydrateContent"] ?? 0;
       totalFat += recipe["FatContent"] ?? 0;
 
       return {
         "name": recipe["Name"],
         "calories": recipe["Calories"] ?? 0,
-        "protein": recipe["ProteinContent"] ?? 0,
+        "sodium": recipe["SodiumContent"] ?? 0,
         "carbs": recipe["CarbohydrateContent"] ?? 0,
         "fat": recipe["FatContent"] ?? 0
       };
@@ -98,7 +98,7 @@ class _SelectRecipesPageState extends State<SelectRecipesPage> {
       await mealDoc.update({
         "foods": FieldValue.arrayUnion(mealFoods),
         "totalCalories": FieldValue.increment(totalCalories),
-        "totalProtein": FieldValue.increment(totalProtein),
+        "totalSodium": FieldValue.increment(totalSodium),
         "totalCarbs": FieldValue.increment(totalCarbs),
         "totalFat": FieldValue.increment(totalFat),
       });
@@ -109,7 +109,7 @@ class _SelectRecipesPageState extends State<SelectRecipesPage> {
         "date": formattedDate,
         "foods": mealFoods,
         "totalCalories": totalCalories,
-        "totalProtein": totalProtein,
+        "totalSodium": totalSodium,
         "totalCarbs": totalCarbs,
         "totalFat": totalFat,
       });
@@ -121,7 +121,7 @@ class _SelectRecipesPageState extends State<SelectRecipesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Select Recipes")),
+      appBar: AppBar(title: const Text("Log Meals")),
       body: Column(
         children: [
           Padding(

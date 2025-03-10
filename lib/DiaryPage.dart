@@ -49,6 +49,7 @@ class _DiaryPageState extends State<DiaryPage> {
     for (var doc in snapshot.docs) {
       Map<String, dynamic> mealData = doc.data() as Map<String, dynamic>;
       String mealType = mealData["mealType"];
+      mealData['id'] = doc.id; // Store meal document ID for deletion
 
       newMeals[mealType] = List<Map<String, dynamic>>.from(mealData["foods"]);
     }
@@ -56,6 +57,33 @@ class _DiaryPageState extends State<DiaryPage> {
     setState(() {
       _selectedMeals = newMeals;
     });
+  }
+
+  Future<void> _deleteFood(String mealType, Map<String, dynamic> foodItem) async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    String formattedDate = DateFormat('yyyy-MM-dd').format(_selectedDate);
+
+    // Find the meal document for the given meal type
+    QuerySnapshot snapshot = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(user.uid)
+        .collection("loggedMeals")
+        .where("date", isEqualTo: formattedDate)
+        .where("mealType", isEqualTo: mealType)
+        .get();
+
+    if (snapshot.docs.isNotEmpty) {
+      DocumentReference mealDoc = snapshot.docs.first.reference;
+
+      // Remove only the selected food item
+      await mealDoc.update({
+        "foods": FieldValue.arrayRemove([foodItem])
+      });
+
+      _fetchLoggedMeals(); // Refresh UI after deletion
+    }
   }
 
   Future<void> _pickDate() async {
@@ -151,14 +179,12 @@ class _DiaryPageState extends State<DiaryPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                isToday
-                    ? "Today"
-                    : DateFormat('yyyy-MM-dd').format(_selectedDate), // Show "Today" if it's today's date
+                isToday ? "Today" : DateFormat('yyyy-MM-dd').format(_selectedDate),
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               IconButton(
                 icon: const Icon(Icons.calendar_today, color: Colors.black),
-                onPressed: _pickDate, // Open date picker
+                onPressed: _pickDate,
               ),
             ],
           ),
@@ -186,7 +212,6 @@ class _DiaryPageState extends State<DiaryPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(width: 5, height: 40, color: color),
                   const SizedBox(width: 10),
@@ -199,24 +224,17 @@ class _DiaryPageState extends State<DiaryPage> {
                   ),
                 ],
               ),
-              ..._selectedMeals[mealTitle]!.map((recipe) => Padding(
-                padding: const EdgeInsets.only(left: 16.0, top: 4.0),
-                child: Text(recipe["name"], style: const TextStyle(fontSize: 14, color: Colors.black87)),
-              )),
-              if (_selectedMeals[mealTitle]!.isNotEmpty) const Divider(),
-              if (_selectedMeals[mealTitle]!.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(left: 16.0, top: 4.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Calories: ${mealNutrition["Calories"]!.toStringAsFixed(1)}", style: const TextStyle(color: Colors.grey)),
-                      Text("Sodium: ${mealNutrition["Sodium"]!.toStringAsFixed(1)} mg", style: const TextStyle(color: Colors.grey)),
-                      Text("Fat: ${mealNutrition["Fat"]!.toStringAsFixed(1)} g", style: const TextStyle(color: Colors.grey)),
-                      Text("Carb: ${mealNutrition["Carbohydrates"]!.toStringAsFixed(1)} g", style: const TextStyle(color: Colors.grey)),
-                    ],
-                  ),
+              Text("Total: ${mealNutrition["Calories"]} kcal | Sodium: ${mealNutrition["Sodium"]} mg | Fat: ${mealNutrition["Fat"]} g | Carbs: ${mealNutrition["Carbohydrates"]} g",
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey)),
+              const Divider(),
+              ..._selectedMeals[mealTitle]!.map((recipe) => ListTile(
+                title: Text(recipe["name"]),
+                subtitle: Text("Calories: ${recipe["calories"]} kcal | Sodium: ${recipe["sodium"]} mg | Fat: ${recipe["fat"]} g | Carbs: ${recipe["carbs"]} g"),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => _deleteFood(mealTitle, recipe),
                 ),
+              )),
             ],
           ),
         ),
