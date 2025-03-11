@@ -11,7 +11,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<Map<String, dynamic>> _recipes = []; // Store API response
+  Map<String, List<Map<String, dynamic>>> _categorizedRecipes = {};
   String _username = "User"; // Default username before fetching
 
   @override
@@ -43,27 +43,35 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _fetchRecommendations() async {
     try {
-      List<dynamic> recommendations = await ApiService.fetchRecommendations();
-      List<Map<String, dynamic>> formattedRecipes = [];
+      Map<String, List<dynamic>> recommendations = await ApiService.fetchMealRecommendations();
+      Map<String, List<Map<String, dynamic>>> formattedRecipes = {};
 
-      for (var recipe in recommendations) {
-        String imageUrl = extractValidImage(recipe['Images']);
+      recommendations.forEach((category, recipes) {
+        List<Map<String, dynamic>> categoryRecipes = [];
 
-        if (imageUrl.isNotEmpty) {
-          formattedRecipes.add({
-            "RecipeId": recipe["RecipeId"] ?? "",
-            "Name": recipe["Name"] ?? "No Name",
-            "Images": imageUrl,
-            "Description": recipe["Description"] ?? "",
-          });
+        for (var recipe in recipes) {
+          String imageUrl = extractValidImage(recipe['Images']);
+
+          if (imageUrl.isNotEmpty) {
+            categoryRecipes.add({
+              "RecipeId": recipe["RecipeId"] ?? "",
+              "Name": recipe["Name"] ?? "No Name",
+              "Images": imageUrl,
+              "Description": recipe["Description"] ?? "",
+            });
+          }
         }
-      }
 
-      setState(() {
-        _recipes = formattedRecipes;
+        if (categoryRecipes.isNotEmpty) {
+          formattedRecipes[category] = categoryRecipes;
+        }
       });
 
-      print("Loaded ${_recipes.length} recommendations!");
+      setState(() {
+        _categorizedRecipes = formattedRecipes;
+      });
+
+      print("Loaded recommendations by category!");
     } catch (error) {
       print("Error fetching recommendations: $error");
     }
@@ -91,6 +99,9 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ Show Recommendations By Category in Correct Order
+    List<String> orderedCategories = ["Breakfast", "Lunch", "Dinner", "Snacks"];
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -185,31 +196,43 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 16),
 
-              // Show Loading Indicator While Fetching Data
-              _recipes.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
-                  : GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 3 / 4,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
+          Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (String category in orderedCategories)
+              if (_categorizedRecipes.containsKey(category)) ...[
+                Text(
+                  category,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
                 ),
-                itemCount: _recipes.length,
-                itemBuilder: (context, index) {
-                  final recipe = _recipes[index];
+                const SizedBox(height: 8),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 3 / 4,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                  ),
+                  itemCount: _categorizedRecipes[category]!.length,
+                  itemBuilder: (context, index) {
+                    final recipe = _categorizedRecipes[category]![index];
+                    return RecipeCard(
+                      title: recipe["Name"],
+                      imageUrl: recipe["Images"],
+                      description: recipe["Description"],
+                      recipeId: recipe["RecipeId"].toString(),
+                    );
+                  },
+                ),
+                const SizedBox(height: 20),
+              ],
+          ],
+        ),
 
-                  return RecipeCard(
-                    title: recipe["Name"],
-                    imageUrl: recipe["Images"],
-                    description: recipe["Description"],
-                    recipeId: recipe["RecipeId"].toString(),
-                  );
-                },
-              ),
-            ],
+
+        ],
           ),
         ),
       ),
