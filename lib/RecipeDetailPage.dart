@@ -88,6 +88,13 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
     return [];
   }
 
+  String _capitalizeFirstWord(String text) {
+    if (text.isEmpty) return text;
+    List<String> words = text.split(" ");
+    words[0] = words[0][0].toUpperCase() + words[0].substring(1);
+    return words.join(" ");
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -187,7 +194,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                           const Text("• ", style: TextStyle(fontSize: 16)),
                           Expanded(
                               child: Text(
-                                ingredient,
+                                _capitalizeFirstWord(ingredient),  // ✅ Apply function to capitalize each word
                                 style: const TextStyle(fontSize: 16),
                                 softWrap: true,
                               )
