@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class RecipeDetailPage extends StatefulWidget {
   final String recipeId;
@@ -23,8 +22,6 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
   }
 
   void _fetchRecipeDetails() async {
-    print("🛠️ Fetching details for recipeId: ${widget.recipeId}");
-
     try {
       DocumentSnapshot doc = await FirebaseFirestore.instance
           .collection('tastyRecipes')
@@ -43,10 +40,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
             "Name": data["Name"] ?? "No Name",
             "Images": imageUrls,
             "Description": data["Description"] ?? "No description available.",
-            "PrepTime": data["PrepTime"] ?? "N/A",
-            "CookTime": data["CookTime"] ?? "N/A",
             "TotalTime": data["TotalTime"] ?? "N/A",
-            "RecipeServings": data["RecipeServings"] ?? "N/A",
             "Ingredients": ingredients,
             "Instructions": instructions,
             "Calories": data["Calories"].toString(),
@@ -84,9 +78,9 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
 
   List<String> _convertToList(dynamic field) {
     if (field is List) {
-      return field.map((e) => e.toString()).toList();  // ✅ Ensure all elements are converted to Strings
+      return field.map((e) => e.toString()).toList();
     } else if (field is String) {
-      return RegExp(r'\"(.*?)\"')  // ✅ Extracts text inside double quotes
+      return RegExp(r'\"(.*?)\"')
           .allMatches(field)
           .map((match) => match.group(1) ?? "")
           .toList();
@@ -94,127 +88,171 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
     return [];
   }
 
-  Widget _buildImageCarousel(List<String> imageUrls) {
-    if (imageUrls.isEmpty) {
-      return Container(
-        height: 200,
-        color: Colors.grey[300],
-        child: const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
-      );
-    }
-
-    return Column(
-      children: [
-        SizedBox(
-          height: 250,
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: imageUrls.length,
-            itemBuilder: (context, index) {
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  imageUrls[index],
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      height: 200,
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
-                    );
-                  },
-                ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 8),
-        SmoothPageIndicator(
-          controller: _pageController,
-          count: imageUrls.length,
-          effect: const ExpandingDotsEffect(
-            dotHeight: 8,
-            dotWidth: 8,
-            activeDotColor: Color.fromRGBO(244, 67, 54, 1),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNutritionInfo() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text("Nutrition Info", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        Text("Calories: ${recipeDetails?["Calories"]} kcal"),
-        Text("Fat: ${recipeDetails?["FatContent"]}g"),
-        Text("Carbs: ${recipeDetails?["CarbohydrateContent"]}g"),
-        Text("Fiber: ${recipeDetails?["FiberContent"]}g"),
-        Text("Sugar: ${recipeDetails?["SugarContent"]}g"),
-        Text("Protein: ${recipeDetails?["ProteinContent"]}g"),
-        Text("Sodium: ${recipeDetails?["SodiumContent"]}mg"),
-        Text("Cholesterol: ${recipeDetails?["CholesterolContent"]}mg"),
-      ],
-    );
-  }
-
-  Widget _buildRecipeDetails() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text("Prep Time: ${recipeDetails?["PrepTime"]}"),
-        Text("Cook Time: ${recipeDetails?["CookTime"]}"),
-        Text("Total Time: ${recipeDetails?["TotalTime"]}"),
-        Text("Servings: ${recipeDetails?["RecipeServings"]}"),
-        const SizedBox(height: 16),
-        const Text("Ingredients", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        ...recipeDetails!["Ingredients"].map((ingredient) => Text("• $ingredient")),
-        const SizedBox(height: 16),
-        const Text("Instructions", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        ...recipeDetails!["Instructions"].asMap().entries.map((entry) => Text("${entry.key + 1}. ${entry.value}")),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text("Recipe Details")),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (recipeDetails == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text("Recipe Details")),
         body: const Center(child: Text("Recipe not found.")),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(recipeDetails!["Name"] ?? "Recipe Details")),
+      backgroundColor: Colors.white,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildImageCarousel(recipeDetails!["Images"]),
-            const SizedBox(height: 16),
-            Text(recipeDetails!["Name"], style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text(recipeDetails!["Description"], style: const TextStyle(fontSize: 16)),
-            const SizedBox(height: 16),
-            _buildRecipeDetails(),
-            const SizedBox(height: 16),
-            _buildNutritionInfo(),
+            // ✅ Recipe Image with Bookmark Icon
+            Stack(
+              children: [
+                SizedBox(
+                  height: 300,
+                  width: double.infinity,
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: recipeDetails!["Images"].length,
+                    itemBuilder: (context, index) {
+                      return Image.network(
+                        recipeDetails!["Images"][index],
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            height: 300,
+                            color: Colors.grey[300],
+                            child: const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                Positioned(
+                  top: 40,
+                  left: 15,
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const CircleAvatar(
+                      backgroundColor: Colors.white,
+                      child: Icon(Icons.arrow_back, color: Colors.black),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 40,
+                  right: 15,
+                  child: const CircleAvatar(
+                    backgroundColor: Colors.white,
+                    child: Icon(Icons.bookmark_border, color: Colors.black),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ✅ Recipe Name
+                  Text(
+                    recipeDetails!["Name"],
+                    style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // ✅ Description
+                  Text(
+                    recipeDetails!["Description"],
+                    style: const TextStyle(fontSize: 16, color: Colors.black54,),
+                    // textAlign: TextAlign.justify
+                  ),
+                  const SizedBox(height: 20),
+
+                  // ✅ Ingredients Section
+                  const Text("Ingredients", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  ...recipeDetails!["Ingredients"].map(
+                        (ingredient) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("• ", style: TextStyle(fontSize: 16)),
+                          Expanded(
+                              child: Text(
+                                ingredient,
+                                style: const TextStyle(fontSize: 16),
+                                softWrap: true,
+                              )
+                          )
+                        ],
+                      )
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // ✅ Instructions Section
+                  const Text("Instructions", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  ...recipeDetails!["Instructions"].asMap().entries.map(
+                        (entry) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("${entry.key + 1}. ", style: const TextStyle(fontSize: 16)),
+                          Expanded(
+                              child: Text(
+                                entry.value,
+                                style: const TextStyle(fontSize: 16),
+                                softWrap: true,
+                              )
+                          )
+                        ],
+                      )
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // ✅ Nutrition Facts
+                  const Text("Nutrition Facts", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  _buildNutritionRow("Calories", "${recipeDetails?["Calories"]} kcal"),
+                  _buildNutritionRow("Fat", "${recipeDetails?["FatContent"]} g"),
+                  _buildNutritionRow("Carbs", "${recipeDetails?["CarbohydrateContent"]} g"),
+                  _buildNutritionRow("Protein", "${recipeDetails?["ProteinContent"]} g"),
+                  _buildNutritionRow("Sodium", "${recipeDetails?["SodiumContent"]} mg"),
+                  _buildNutritionRow("Cholesterol", "${recipeDetails?["CholesterolContent"]} mg"),
+
+                  const SizedBox(height: 30),
+                ],
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  // ✅ Function to Build Nutrition Row
+  Widget _buildNutritionRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.normal)),
+        ],
       ),
     );
   }
