@@ -56,8 +56,8 @@ class _HomePageState extends State<HomePage> {
             categoryRecipes.add({
               "RecipeId": recipe["RecipeId"] ?? "",
               "Name": recipe["Name"] ?? "No Name",
+              "TotalTime": recipe["TotalTime"] ?? "N/A",
               "Images": imageUrl,
-              "Description": recipe["Description"] ?? "",
             });
           }
         }
@@ -220,8 +220,8 @@ class _HomePageState extends State<HomePage> {
                     final recipe = _categorizedRecipes[category]![index];
                     return RecipeCard(
                       title: recipe["Name"],
+                      totalTime: recipe["TotalTime"],
                       imageUrl: recipe["Images"],
-                      description: recipe["Description"],
                       recipeId: recipe["RecipeId"].toString(),
                     );
                   },

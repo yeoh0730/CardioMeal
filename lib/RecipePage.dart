@@ -45,8 +45,8 @@ class _RecipePageState extends State<RecipePage> {
           loadedRecipes.add({
             "RecipeId": doc.id,
             "Name": recipe["Name"] ?? "No Name",
+            "TotalTime": recipe["TotalTime"] ?? "N/A",
             "Images": imageUrl,
-            "Description": recipe["Description"] ?? "",
             "Keywords": recipe["Keywords"] ?? "", // Extract keywords for filtering
           });
         }
@@ -249,8 +249,8 @@ class _RecipePageState extends State<RecipePage> {
                   final recipe = filteredRecipes[index];
                   return RecipeCard(
                     title: recipe["Name"],
+                    totalTime: recipe["TotalTime"],
                     imageUrl: recipe["Images"],
-                    description: recipe["Description"],
                     recipeId: recipe["RecipeId"],
                   );
                 },
