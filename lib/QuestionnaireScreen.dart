@@ -109,20 +109,31 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     User? user = FirebaseAuth.instance.currentUser;
 
     if (user != null) {
-      await FirebaseFirestore.instance.collection("users").doc(user.uid).set({
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+      // ✅ Store Basic User Profile (Merges with existing data)
+      await firestore.collection("users").doc(user.uid).set({
         "name": _firstNameController.text.trim(),
         "age": _ageController.text.trim(),
         "gender": _gender,
         "height": _heightController.text.trim(),
         "weight": _weightController.text.trim(),
+        "dietaryPreferences": _selectedDietaryPreferences,
+        "activityLevel": _selectedActivityLevel,
+      }, SetOptions(merge: true));
+
+      // ✅ Store Health Metrics in a Sub-Collection (Tracks History)
+      String timestamp = DateTime.now().toIso8601String();
+      await firestore.collection("users").doc(user.uid).collection("health_metrics").doc(timestamp).set({
         "cholesterol": _cholesterolController.text.trim(),
         "systolicBP": _systolicBPController.text.trim(),
         "diastolicBP": _diastolicBPController.text.trim(),
         "bloodGlucose": _bloodGlucoseController.text.trim(),
         "restingHeartRate": _heartRateController.text.trim(),
-        "dietaryPreferences": _selectedDietaryPreferences, // Store list in Firestore
-        "activityLevel": _selectedActivityLevel, // Store list in Firestore
-      }, SetOptions(merge: true));
+        "timestamp": timestamp, // Stores time for progress tracking
+      });
+
+      print("✅ Health metrics saved with timestamp: $timestamp");
 
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen()));
     }
