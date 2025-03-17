@@ -124,7 +124,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
 
       // ✅ Store Health Metrics in a Sub-Collection (Tracks History)
       String timestamp = DateTime.now().toIso8601String();
-      await firestore.collection("users").doc(user.uid).collection("health_metrics").doc(timestamp).set({
+      await firestore.collection("users").doc(user.uid).collection("healthMetrics").doc(timestamp).set({
         "cholesterol": _cholesterolController.text.trim(),
         "systolicBP": _systolicBPController.text.trim(),
         "diastolicBP": _diastolicBPController.text.trim(),
