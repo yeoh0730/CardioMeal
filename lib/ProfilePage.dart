@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'EditProfilePage.dart';  // Import new page
-import 'EditDietPreferencePage.dart'; // Import new page
+import 'EditProfilePage.dart';
+import 'EditDietPreferencePage.dart';
 import 'LoginPage.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -102,7 +102,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       }
                     });
                   }),
-                  _buildOption(Icons.logout, "Logout", _logout, isLogout: true),
+                  _buildOption(Icons.logout, "Logout", _showLogoutConfirmationDialog, isLogout: true),
                 ],
               ),
             ),
@@ -134,6 +134,33 @@ class _ProfilePageState extends State<ProfilePage> {
       title: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
       trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
       onTap: onTap,
+    );
+  }
+
+  // ✅ Confirmation Dialog Before Logging Out
+  void _showLogoutConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Logout"),
+          content: const Text("Are you sure you want to log out?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context), // Close dialog
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog first
+                _logout(); // Perform logout
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text("Logout", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
     );
   }
 
