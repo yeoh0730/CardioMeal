@@ -136,6 +136,7 @@ class _DiaryPageState extends State<DiaryPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         elevation: 0,
         backgroundColor: Colors.white,
         title: const Text(
@@ -204,41 +205,106 @@ class _DiaryPageState extends State<DiaryPage> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        color: Colors.white,
+        elevation: 3,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16), // Larger radius for a softer look
+        ),
         child: Padding(
-          padding: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.all(16.0), // Increase padding for a cleaner layout
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ====== Title Row ======
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Container(width: 5, height: 40, color: color),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(mealTitle, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  // Thick colored strip
+                  Container(
+                    width: 8,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
                   ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      mealTitle,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  // Add meal icon
                   IconButton(
                     icon: const Icon(Icons.add_circle, color: Colors.red),
                     onPressed: () => _navigateToRecipeSelection(mealTitle),
                   ),
                 ],
               ),
-              Text("Total: ${mealNutrition["Calories"]} kcal | Sodium: ${mealNutrition["Sodium"]} mg | Fat: ${mealNutrition["Fat"]} g | Carbs: ${mealNutrition["Carbohydrates"]} g",
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey)),
-              const Divider(),
-              ..._selectedMeals[mealTitle]!.map((recipe) => ListTile(
-                title: Text(recipe["name"]),
-                subtitle: Text("Calories: ${recipe["calories"]} kcal | Sodium: ${recipe["sodium"]} mg | Fat: ${recipe["fat"]} g | Carbs: ${recipe["carbs"]} g"),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _deleteFood(mealTitle, recipe),
+
+              const SizedBox(height: 8),
+
+              // ====== Nutrition Summary ======
+              Text(
+                "Total: ${mealNutrition["Calories"]} kcal | Sodium: ${mealNutrition["Sodium"]} mg | Fat: ${mealNutrition["Fat"]} g | Carbs: ${mealNutrition["Carbohydrates"]} g",
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey,
                 ),
-              )),
+              ),
+
+              // Only show a divider if there are items
+              if (_selectedMeals[mealTitle]!.isNotEmpty)
+                const SizedBox(height: 8),
+              if (_selectedMeals[mealTitle]!.isNotEmpty)
+                const Divider(),
+
+              // ====== Foods List ======
+              Column(
+                children: _selectedMeals[mealTitle]!.map((recipe) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(width: 8),
+                        // Food info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                recipe["name"],
+                                style: const TextStyle(fontWeight: FontWeight.w400),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                "Calories: ${recipe["calories"]} kcal | Sodium: ${recipe["sodium"]} mg | Fat: ${recipe["fat"]} g | Carbs: ${recipe["carbs"]} g",
+                                style: const TextStyle(fontSize: 13, color: Colors.black54),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Delete icon
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => _deleteFood(mealTitle, recipe),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
             ],
           ),
         ),
       ),
     );
   }
+
 }
