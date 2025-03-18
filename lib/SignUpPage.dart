@@ -20,39 +20,29 @@ class _SignUpPageState extends State<SignUpPage> {
   bool _isLoading = false;
   String _errorMessage = '';
 
-  void _signUp() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = '';
-    });
+  // Instead of creating a user here, just pass the data to the questionnaire.
+  void _goToQuestionnaire() {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
 
-    try {
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
-
-      User? user = userCredential.user;
-      if (user != null) {
-        await _firestore.collection("users").doc(user.uid).set({
-          "email": user.email,
-          "createdAt": Timestamp.now(),
-        }, SetOptions(merge: true));
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => QuestionnaireScreen()),
-        );
-      }
-    } on FirebaseAuthException catch (e) {
+    if (email.isEmpty || password.isEmpty) {
       setState(() {
-        _errorMessage = e.message ?? "An error occurred";
+        _errorMessage = "Please enter an email and password.";
       });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      return;
     }
+
+    // Navigate to questionnaire, passing email & password
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            QuestionnaireScreen(
+              email: email,
+              password: password,
+            ),
+      ),
+    );
   }
 
   @override
@@ -127,7 +117,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 _isLoading
                     ? const CircularProgressIndicator()
                     : ElevatedButton(
-                  onPressed: _signUp,
+                  onPressed: _goToQuestionnaire,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color.fromRGBO(244, 67, 54, 1),
                     foregroundColor: Colors.white,

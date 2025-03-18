@@ -6,6 +6,12 @@ import 'models/custom_button.dart';
 import 'models/custom_input_field.dart';
 
 class QuestionnaireScreen extends StatefulWidget {
+  final String email;
+  final String password;
+
+  // Accept email & password from sign-up page
+  QuestionnaireScreen({required this.email, required this.password});
+
   @override
   _QuestionnaireScreenState createState() => _QuestionnaireScreenState();
 }
@@ -116,13 +122,28 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
 
   // ======== FIRESTORE SAVE ========
   void _saveUserProfile() async {
+    try {
+      // 1) Create user in Firebase Auth using the email/password from sign-up
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+        email: widget.email,         // from constructor
+        password: widget.password,   // from constructor
+      );
+
     User? user = FirebaseAuth.instance.currentUser;
 
-    if (user != null) {
+    if (user == null) {
+      setState(() {
+        _errorMessage = "Failed to create user in Auth.";
+      });
+      return;
+    }
+
       FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-      // Merge Basic User Profile
       await firestore.collection("users").doc(user.uid).set({
+        "email": user.email,
+        "createdAt": DateTime.now(),
         "name": _firstNameController.text.trim(),
         "age": _ageController.text.trim(),
         "gender": _gender,
@@ -132,7 +153,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         "activityLevel": _selectedActivityLevel,
       }, SetOptions(merge: true));
 
-      // Store Health Metrics in a Sub-Collection
+      // 3) Save health metrics
       String timestamp = DateTime.now().toIso8601String();
       await firestore
           .collection("users")
@@ -148,8 +169,18 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         "timestamp": timestamp,
       });
 
-      print("✅ Health metrics saved with timestamp: $timestamp");
+      // 4) Navigate to Home
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen()));
+
+    } on FirebaseAuthException catch (e) {
+      // If something goes wrong (e.g. email in use, weak password, etc.)
+      setState(() {
+        _errorMessage = e.message ?? "Error creating user in Auth.";
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = "Error: $e";
+      });
     }
   }
 

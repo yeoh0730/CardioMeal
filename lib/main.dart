@@ -7,6 +7,7 @@ import 'package:project/ProfilePage.dart';
 import 'package:project/RecipePage.dart';
 import 'package:project/RecipeDetailPage.dart';
 import 'LoginPage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Ensure Flutter bindings are initialized
@@ -36,22 +37,36 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// This checks if user is logged in or not
 class AuthenticationWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator()); // Show loading screen
+      builder: (context, authSnapshot) {
+        // 1) Still show a loading indicator if we don't know the Auth state yet
+        if (authSnapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
         }
-        if (snapshot.hasData) {
-          // Force navigation reset on login
-          return HomeScreen();
-        } else {
+
+        // 2) If there's no Auth user, go to Login
+        if (!authSnapshot.hasData || authSnapshot.data == null) {
           return LoginPage();
         }
+
+        // 3) If we have an Auth user, do a Firestore check:
+        final uid = authSnapshot.data!.uid;
+        return FutureBuilder<DocumentSnapshot>(
+          future: FirebaseFirestore.instance.collection("users").doc(uid).get(),
+          builder: (context, docSnapshot) {
+            if (!docSnapshot.hasData || !docSnapshot.data!.exists) {
+              // No Firestore doc => incomplete sign-up => log out or go to Login
+              return LoginPage();
+            }
+
+            // If Firestore doc exists => user is fully registered
+            return HomeScreen();
+          },
+        );
       },
     );
   }
