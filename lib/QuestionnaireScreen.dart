@@ -202,19 +202,27 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
 
     return Column(
       children: [
-        // Row with back arrow and step text
         Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            // Show back arrow if not on the first page
-            if (_currentPage > 0)
+            // ====== Condition for Back Arrow ======
+            if (_currentPage == 0)
+            // Step 1 (index 0) => go back to SignUpPage
               IconButton(
                 icon: const Icon(Icons.arrow_back),
-                onPressed: _previousPage,
+                color: const Color.fromRGBO(244, 67, 54, 1),
+                onPressed: () {
+                  // Go back to SignUpPage
+                  Navigator.pop(context);
+                },
               )
             else
-            // If you want an empty space on the first page, you can do:
-              const SizedBox(width: 48), // same width as IconButton for alignment
+            // Steps 2..N => go to previous page
+              IconButton(
+                icon: const Icon(Icons.arrow_back),
+                color: const Color.fromRGBO(244, 67, 54, 1),
+                onPressed: _previousPage,
+              ),
 
             Expanded(
               child: Center(
@@ -228,20 +236,21 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
               ),
             ),
 
-            // If you want symmetrical space on the right side:
+            // Optional symmetrical space on the right
             const SizedBox(width: 48),
           ],
         ),
+
+        const SizedBox(height: 5),
+
         // Progress bar
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: LinearProgressIndicator(
             value: progress,
-            // The active (filled) color
             valueColor: AlwaysStoppedAnimation<Color>(
               const Color.fromRGBO(244, 67, 54, 1),
             ),
-            // Optional background color for the unfilled portion
             backgroundColor: Colors.grey[300],
           ),
         ),
@@ -265,7 +274,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
               child: Text(
                 _errorMessage,
                 style: const TextStyle(
-                  color: Colors.red,
+                  color: Color.fromRGBO(244, 67, 54, 1),
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,

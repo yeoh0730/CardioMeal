@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:project/LoginPage.dart';
 import 'package:project/QuestionnaireScreen.dart';
+import 'models/custom_button.dart';
 
 class SignUpPage extends StatefulWidget {
   @override
@@ -116,14 +117,9 @@ class _SignUpPageState extends State<SignUpPage> {
 
                 _isLoading
                     ? const CircularProgressIndicator()
-                    : ElevatedButton(
+                    : CustomButton(
+                  text: "Sign Up",
                   onPressed: _goToQuestionnaire,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromRGBO(244, 67, 54, 1),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-                  ),
-                  child: const Text('Sign Up', style: TextStyle(color: Colors.white)),
                 ),
                 const SizedBox(height: 8),
 
