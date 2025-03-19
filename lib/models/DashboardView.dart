@@ -22,6 +22,7 @@ class _DashboardViewState extends State<DashboardView> {
 
   // List of dates for the X-axis
   List<DateTime> metricDates = [];
+  bool _isChartLoading = true;
 
   @override
   void initState() {
@@ -81,6 +82,7 @@ class _DashboardViewState extends State<DashboardView> {
       setState(() {
         healthData = newHealthData;
         metricDates = newDates; // store date list for X-axis labels
+        _isChartLoading = false;
       });
     }
   }
@@ -325,7 +327,16 @@ class _DashboardViewState extends State<DashboardView> {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: SingleChildScrollView(
-            child: Column(
+            child: _isChartLoading
+            // If loading, show a spinner or placeholder
+                ? Center(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 50.0),
+                child: CircularProgressIndicator(),
+              ),
+            )
+            // If not loading, show your entire UI with charts
+                : Column(
               children: [
                 _buildProgressCard("Today's Progress"),
                 const SizedBox(height: 16),
@@ -333,7 +344,8 @@ class _DashboardViewState extends State<DashboardView> {
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: _showUpdateDialog,
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red, foregroundColor: Colors.white),
                   child: const Text("Update health metrics", style: TextStyle(fontSize: 12)),
                 ),
                 _buildMetricGraph("Cholesterol Level", "Cholesterol"),

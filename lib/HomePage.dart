@@ -144,6 +144,7 @@ class _HomePageState extends State<HomePage> {
 
               // Nutrient Progress Cards
               Card(
+                color: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16.0),
