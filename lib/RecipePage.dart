@@ -10,8 +10,12 @@ class RecipePage extends StatefulWidget {
 class _RecipePageState extends State<RecipePage> {
   List<Map<String, dynamic>> recipes = [];
   List<Map<String, dynamic>> filteredRecipes = [];
-  List<String> selectedFilters = []; // Selected filters
+  List<String> selectedFilters = [];
   TextEditingController _searchController = TextEditingController();
+
+  DocumentSnapshot? _lastDocument;
+  bool _hasMore = true;  // True if we still have more pages to load
+  bool _isLoading = false; // True if we're currently loading a page
 
   final List<String> mealTypes = [
     "Breakfast",
@@ -20,69 +24,95 @@ class _RecipePageState extends State<RecipePage> {
     "Dessert",
     "Snack",
     "Brunch"
-  ]; // Filter options
+  ];
 
   @override
   void initState() {
     super.initState();
-    _fetchRecipes();
+
+    // 1) Listen for search bar changes
+    _searchController.addListener(() {
+      final text = _searchController.text;
+      if (text.isNotEmpty) {
+        // User typed something => stop auto-loading so we don't overwrite search results
+        // We don't do anything special here, just let them search locally
+      } else {
+        // User cleared search => optionally resume auto-loading
+        // if we haven't loaded everything yet
+        if (_hasMore && !_isLoading) {
+          _fetchAllPages();
+        }
+        // Also revert to showing all loaded recipes
+        setState(() {
+          filteredRecipes = List.from(recipes);
+        });
+      }
+    });
+
+    // 2) Start auto-fetching all pages in the background
+    _fetchAllPages();
   }
 
-  // Fetch recipes from Firestore
-  void _fetchRecipes() async {
-    try {
-      QuerySnapshot snapshot =
-      await FirebaseFirestore.instance.collection('tastyRecipes').get();
-      List<Map<String, dynamic>> loadedRecipes = [];
+  // ===== AUTO-FETCH ALL PAGES =====
+  Future<void> _fetchAllPages({int limit = 20}) async {
+    // Keep fetching while we have more docs,
+    // the widget is still mounted,
+    // and the user hasn't started typing a query.
+    while (_hasMore && mounted && _searchController.text.isEmpty) {
+      await _fetchRecipes(limit: limit);
+    }
+  }
+
+  // ===== PAGINATED FETCH (One Page) =====
+  Future<void> _fetchRecipes({int limit = 20}) async {
+    if (_isLoading || !_hasMore) return; // Prevent duplicate calls
+    setState(() => _isLoading = true);
+
+    Query query = FirebaseFirestore.instance
+        .collection('tastyRecipes')
+        .limit(limit);
+
+    if (_lastDocument != null) {
+      query = query.startAfterDocument(_lastDocument!);
+    }
+
+    QuerySnapshot snapshot = await query.get();
+
+    if (snapshot.docs.isNotEmpty) {
+      _lastDocument = snapshot.docs.last; // new last doc
+      List<Map<String, dynamic>> newRecipes = [];
 
       for (var doc in snapshot.docs) {
-        Map<String, dynamic> recipe = doc.data() as Map<String, dynamic>;
-
-        // Extract valid image URL
-        String imageUrl = extractFirstValidImage(recipe['Images']);
-
-        if (imageUrl.isNotEmpty) {
-          loadedRecipes.add({
-            "RecipeId": doc.id,
-            "Name": recipe["Name"] ?? "No Name",
-            "TotalTime": recipe["TotalTime"] ?? "N/A",
-            "Images": imageUrl,
-            "Keywords": recipe["Keywords"] ?? "", // Extract keywords for filtering
-          });
-        }
+        Map<String, dynamic> recipeData = doc.data() as Map<String, dynamic>;
+        newRecipes.add({
+          "RecipeId": doc.id,
+          "Name": recipeData["Name"] ?? "No Name",
+          "TotalTime": recipeData["TotalTime"] ?? "N/A",
+          "Images": recipeData['Images'] ?? '',
+          "Keywords": recipeData["Keywords"] ?? "",
+        });
       }
 
       setState(() {
-        recipes = loadedRecipes;
-        filteredRecipes = loadedRecipes;
+        recipes.addAll(newRecipes);
+        // If the user hasn't typed a search, show all loaded recipes
+        if (_searchController.text.isEmpty) {
+          filteredRecipes = List.from(recipes);
+        }
       });
-
-      print("Loaded ${recipes.length} recipes!");
-    } catch (e) {
-      print("Error fetching recipes: $e");
+    } else {
+      // No more docs
+      setState(() {
+        _hasMore = false;
+      });
     }
+
+    setState(() => _isLoading = false);
   }
 
-  // Extracts the first valid image URL
-  String extractFirstValidImage(dynamic imagesField) {
-    if (imagesField == null || imagesField == "character(0)") {
-      return "";
-    }
-
-    String imagesString = imagesField.toString();
-    imagesString = imagesString.replaceAll('"', '');
-
-    List<String> imageUrls = imagesString.split(", ");
-    for (String url in imageUrls) {
-      if (url.startsWith("https://")) {
-        return url;
-      }
-    }
-    return "";
-  }
-
-  // Search filter
+  // ===== LOCAL SEARCH FILTER =====
   void _filterRecipes(String query) {
+    // Filter among the currently loaded recipes
     List<Map<String, dynamic>> results = recipes.where((recipe) {
       final name = recipe["Name"].toLowerCase();
       return name.contains(query.toLowerCase());
@@ -93,6 +123,7 @@ class _RecipePageState extends State<RecipePage> {
     });
   }
 
+  // ===== FILTER DIALOG =====
   void _openFilterDialog() {
     showDialog(
       context: context,
@@ -101,17 +132,15 @@ class _RecipePageState extends State<RecipePage> {
           builder: (context, setDialogState) {
             return AlertDialog(
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20), // Optional: Rounded corners
+                borderRadius: BorderRadius.circular(20),
               ),
               title: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text("Filter by Meal Type"),
                   IconButton(
-                    icon: const Icon(Icons.close, color: Colors.black), // ✅ Close button
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
+                    icon: const Icon(Icons.close, color: Colors.black),
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ],
               ),
@@ -137,8 +166,8 @@ class _RecipePageState extends State<RecipePage> {
                 TextButton(
                   onPressed: () {
                     setState(() {
-                      selectedFilters.clear(); // Clear filters
-                      filteredRecipes = List.from(recipes); // Show all recipes
+                      selectedFilters.clear();
+                      filteredRecipes = List.from(recipes);
                     });
                     Navigator.pop(context);
                   },
@@ -159,11 +188,11 @@ class _RecipePageState extends State<RecipePage> {
     );
   }
 
-  // Apply filter based on selected meal types
+  // ===== APPLY FILTER =====
   void _applyFilter() {
     if (selectedFilters.isEmpty) {
       setState(() {
-        filteredRecipes = List.from(recipes); // Show all recipes if no filters
+        filteredRecipes = List.from(recipes);
       });
       return;
     }
@@ -178,6 +207,7 @@ class _RecipePageState extends State<RecipePage> {
     });
   }
 
+  // ===== MAIN BUILD =====
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -194,7 +224,7 @@ class _RecipePageState extends State<RecipePage> {
           ),
           child: TextField(
             controller: _searchController,
-            onChanged: _filterRecipes,
+            onChanged: _filterRecipes, // local filtering among loaded recipes
             decoration: InputDecoration(
               hintText: 'Search recipes',
               hintStyle: const TextStyle(color: Colors.grey),
@@ -216,7 +246,7 @@ class _RecipePageState extends State<RecipePage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_alt_rounded, color: Colors.black),
-            onPressed: _openFilterDialog, // Open filter dialog
+            onPressed: _openFilterDialog,
           ),
         ],
       ),
@@ -225,7 +255,6 @@ class _RecipePageState extends State<RecipePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Recipes Title
             const Text(
               "Recipes",
               style: TextStyle(
@@ -234,27 +263,33 @@ class _RecipePageState extends State<RecipePage> {
                 color: Colors.black,
               ),
             ),
-            const SizedBox(height: 16), // Add spacing before grid
+            const SizedBox(height: 16),
 
-            // Recipe Grid
             Expanded(
-              child: GridView.builder(
-                itemCount: filteredRecipes.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 3 / 4,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                ),
-                itemBuilder: (context, index) {
-                  final recipe = filteredRecipes[index];
-                  return RecipeCard(
-                    title: recipe["Name"],
-                    totalTime: recipe["TotalTime"],
-                    imageUrl: recipe["Images"],
-                    recipeId: recipe["RecipeId"],
-                  );
-                },
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: GridView.builder(
+                      padding: const EdgeInsets.only(bottom: 80),
+                      itemCount: filteredRecipes.length,
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 3 / 4,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                      ),
+                      itemBuilder: (context, index) {
+                        final recipe = filteredRecipes[index];
+                        return RecipeCard(
+                          title: recipe["Name"],
+                          totalTime: recipe["TotalTime"],
+                          imageUrl: recipe["Images"],
+                          recipeId: recipe["RecipeId"],
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
