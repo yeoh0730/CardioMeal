@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart'; // For Graphs
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 
 class DashboardView extends StatefulWidget {
   @override
@@ -18,6 +19,9 @@ class _DashboardViewState extends State<DashboardView> {
     "Blood Glucose": [],
     "Heart Rate": [],
   };
+
+  // List of dates for the X-axis
+  List<DateTime> metricDates = [];
 
   @override
   void initState() {
@@ -38,6 +42,7 @@ class _DashboardViewState extends State<DashboardView> {
         .get();
 
     if (snapshot.docs.isNotEmpty) {
+      // Temp containers
       Map<String, List<FlSpot>> newHealthData = {
         "Cholesterol": [],
         "Systolic BP": [],
@@ -46,17 +51,36 @@ class _DashboardViewState extends State<DashboardView> {
         "Heart Rate": [],
       };
 
+      // Clear old dates
+      List<DateTime> newDates = [];
+
       for (int i = 0; i < snapshot.docs.length; i++) {
         var data = snapshot.docs[i].data() as Map<String, dynamic>;
-        newHealthData["Cholesterol"]!.add(FlSpot(i.toDouble(), data["cholesterol"].toDouble()));
-        newHealthData["Systolic BP"]!.add(FlSpot(i.toDouble(), data["systolicBP"].toDouble()));
-        newHealthData["Diastolic BP"]!.add(FlSpot(i.toDouble(), data["diastolicBP"].toDouble()));
-        newHealthData["Blood Glucose"]!.add(FlSpot(i.toDouble(), data["bloodGlucose"].toDouble()));
-        newHealthData["Heart Rate"]!.add(FlSpot(i.toDouble(), data["heartRate"].toDouble()));
+
+        // Convert Firestore Timestamp to DateTime
+        Timestamp? ts = data["timestamp"];
+        DateTime date = DateTime.now();
+        if (ts != null) {
+          date = ts.toDate();
+        }
+        newDates.add(date);
+
+        // Convert each metric to double & create FlSpot
+        newHealthData["Cholesterol"]!
+            .add(FlSpot(i.toDouble(), (data["cholesterol"] ?? 0).toDouble()));
+        newHealthData["Systolic BP"]!
+            .add(FlSpot(i.toDouble(), (data["systolicBP"] ?? 0).toDouble()));
+        newHealthData["Diastolic BP"]!
+            .add(FlSpot(i.toDouble(), (data["diastolicBP"] ?? 0).toDouble()));
+        newHealthData["Blood Glucose"]!
+            .add(FlSpot(i.toDouble(), (data["bloodGlucose"] ?? 0).toDouble()));
+        newHealthData["Heart Rate"]!
+            .add(FlSpot(i.toDouble(), (data["heartRate"] ?? 0).toDouble()));
       }
 
       setState(() {
         healthData = newHealthData;
+        metricDates = newDates; // store date list for X-axis labels
       });
     }
   }
@@ -73,16 +97,19 @@ class _DashboardViewState extends State<DashboardView> {
       context: context,
       builder: (context) {
         return AlertDialog(
+          backgroundColor: Colors.white,
           title: const Text("Update Health Metrics"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildTextField("Cholesterol", cholesterolController),
-              _buildTextField("Systolic BP", systolicBPController),
-              _buildTextField("Diastolic BP", diastolicBPController),
-              _buildTextField("Blood Glucose", bloodGlucoseController),
-              _buildTextField("Heart Rate", heartRateController),
-            ],
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildTextField("Cholesterol", cholesterolController),
+                _buildTextField("Systolic BP", systolicBPController),
+                _buildTextField("Diastolic BP", diastolicBPController),
+                _buildTextField("Blood Glucose", bloodGlucoseController),
+                _buildTextField("Heart Rate", heartRateController),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -144,6 +171,7 @@ class _DashboardViewState extends State<DashboardView> {
   // ✅ Build Graph UI for each Metric
   Widget _buildMetricGraph(String title, String metricKey) {
     return Card(
+      color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       elevation: 2,
       child: Padding(
@@ -151,25 +179,51 @@ class _DashboardViewState extends State<DashboardView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const Spacer(),
-                // ElevatedButton(
-                //   onPressed: _showUpdateDialog,
-                //   style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-                //   child: const Text("Update", style: TextStyle(fontSize: 12)),
-                // ),
-              ],
-            ),
-            const SizedBox(height: 10),
+            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 20),
             SizedBox(
-              height: 150,
+              height: 200, // slightly taller
               child: LineChart(
                 LineChartData(
-                  gridData: const FlGridData(show: false),
-                  borderData: FlBorderData(show: false),
-                  titlesData: const FlTitlesData(show: false),
+                  backgroundColor: Colors.white,
+                  // Hide or show grid lines
+                  gridData: FlGridData(show: false),
+                  // Hide the chart border
+                  borderData: FlBorderData(show: true, border: Border.all(color: Colors.white)),
+                  // Configure axis titles
+                  titlesData: FlTitlesData(
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 40, // space for the text
+                        getTitlesWidget: (value, meta) {
+                          // Round or cast to int if you want only integer labels
+                          return Text(value.toInt().toString(),
+                              style: const TextStyle(fontSize: 10));
+                        },
+                      ),
+                    ),
+                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        interval: 1, // ensure a label for each point
+                        getTitlesWidget: (value, meta) {
+                          int index = value.toInt();
+                          // If index is out of range, return empty
+                          if (index < 0 || index >= metricDates.length) {
+                            return const SizedBox.shrink();
+                          }
+                          // Format the date
+                          DateTime date = metricDates[index];
+                          String formatted = DateFormat('MM/dd').format(date);
+                          return Text(formatted, style: const TextStyle(fontSize: 10));
+                        },
+                      ),
+                    ),
+                  ),
+                  // Pass the spots for the given metric
                   lineBarsData: [
                     LineChartBarData(
                       isCurved: true,
@@ -190,6 +244,7 @@ class _DashboardViewState extends State<DashboardView> {
   // ✅ Progress Card Widget
   Widget _buildProgressCard(String title) {
     return Card(
+      color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       elevation: 2,
       child: Padding(
