@@ -13,6 +13,8 @@ class RecipeDetailPage extends StatefulWidget {
 class _RecipeDetailPageState extends State<RecipeDetailPage> {
   Map<String, dynamic>? recipeDetails;
   bool isLoading = true;
+
+  // Controller for PageView (images carousel)
   final PageController _pageController = PageController();
 
   @override
@@ -21,19 +23,22 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
     _fetchRecipeDetails();
   }
 
+  // Fetch recipe details from Firestore
   void _fetchRecipeDetails() async {
     try {
       DocumentSnapshot doc = await FirebaseFirestore.instance
           .collection('tastyRecipes')
-          .doc(widget.recipeId.toString())
+          .doc(widget.recipeId)
           .get();
 
       if (doc.exists) {
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
 
+        // Convert various fields to lists safely
         List<String> imageUrls = _cleanImageUrls(data["Images"]);
         List<String> ingredients = _convertToList(data["RecipeIngredientParts"]);
         List<String> instructions = _convertToList(data["RecipeInstructions"]);
+        List<String> keywords = _convertToList(data["Keywords"]);
 
         setState(() {
           recipeDetails = {
@@ -43,18 +48,20 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
             "TotalTime": data["TotalTime"] ?? "N/A",
             "Ingredients": ingredients,
             "Instructions": instructions,
-            "Calories": data["Calories"].toString(),
-            "FatContent": data["FatContent"].toString(),
-            "CarbohydrateContent": data["CarbohydrateContent"].toString(),
-            "FiberContent": data["FiberContent"].toString(),
-            "SugarContent": data["SugarContent"].toString(),
-            "ProteinContent": data["ProteinContent"].toString(),
-            "SodiumContent": data["SodiumContent"].toString(),
-            "CholesterolContent": data["CholesterolContent"].toString(),
+            "Keywords": keywords,
+            "Calories": data["Calories"]?.toString() ?? "0",
+            "FatContent": data["FatContent"]?.toString() ?? "0",
+            "CarbohydrateContent": data["CarbohydrateContent"]?.toString() ?? "0",
+            "FiberContent": data["FiberContent"]?.toString() ?? "0",
+            "SugarContent": data["SugarContent"]?.toString() ?? "0",
+            "ProteinContent": data["ProteinContent"]?.toString() ?? "0",
+            "SodiumContent": data["SodiumContent"]?.toString() ?? "0",
+            "CholesterolContent": data["CholesterolContent"]?.toString() ?? "0",
           };
           isLoading = false;
         });
       } else {
+        // Document doesn't exist
         setState(() {
           isLoading = false;
         });
@@ -67,19 +74,33 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
     }
   }
 
+  /// Converts the "Images" field, which might be a string or list, into a List of URLs.
   List<String> _cleanImageUrls(dynamic imagesField) {
+    if (imagesField == null) {
+      return [];
+    }
     if (imagesField is String) {
-      return imagesField.replaceAll('"', '').split(", ").where((url) => url.startsWith("http")).toList();
+      // Remove extra quotes, split by commas, keep only valid http links
+      return imagesField
+          .replaceAll('"', '')
+          .split(", ")
+          .where((url) => url.startsWith("http"))
+          .toList();
     } else if (imagesField is List) {
+      // Already a list; ensure all elements are strings
       return List<String>.from(imagesField);
     }
     return [];
   }
 
+  /// Converts a field (could be a List, a quoted string, or null) into a List<String>.
   List<String> _convertToList(dynamic field) {
-    if (field is List) {
+    if (field == null) {
+      return [];
+    } else if (field is List) {
       return field.map((e) => e.toString()).toList();
     } else if (field is String) {
+      // Example: ""Meal", "Dinner", "Seafood""
       return RegExp(r'\"(.*?)\"')
           .allMatches(field)
           .map((match) => match.group(1) ?? "")
@@ -88,6 +109,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
     return [];
   }
 
+  /// Capitalizes the first word of a string (used for ingredient lines).
   String _capitalizeFirstWord(String text) {
     if (text.isEmpty) return text;
     List<String> words = text.split(" ");
@@ -109,13 +131,28 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
       );
     }
 
+    // -------------------------------------------
+    // SAFELY RETRIEVE LIST FIELDS
+    // -------------------------------------------
+    final dynamic imagesField = recipeDetails?["Images"];
+    final List<String> imageUrls = (imagesField is List<String>) ? imagesField : <String>[];
+
+    final dynamic ingredientsField = recipeDetails?["Ingredients"];
+    final List<String> ingredientsList = (ingredientsField is List<String>) ? ingredientsField : <String>[];
+
+    final dynamic instructionsField = recipeDetails?["Instructions"];
+    final List<String> instructionsList = (instructionsField is List<String>) ? instructionsField : <String>[];
+
+    final dynamic keywordsField = recipeDetails?["Keywords"];
+    final List<String> keywordsList = (keywordsField is List<String>) ? keywordsField : <String>[];
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ✅ Recipe Image with Bookmark Icon
+            // Top Image Carousel
             Stack(
               children: [
                 SizedBox(
@@ -123,16 +160,20 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                   width: double.infinity,
                   child: PageView.builder(
                     controller: _pageController,
-                    itemCount: recipeDetails!["Images"].length,
+                    itemCount: imageUrls.length,
                     itemBuilder: (context, index) {
                       return Image.network(
-                        recipeDetails!["Images"][index],
+                        imageUrls[index],
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
                             height: 300,
                             color: Colors.grey[300],
-                            child: const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+                            child: const Icon(
+                              Icons.image_not_supported,
+                              size: 50,
+                              color: Colors.grey,
+                            ),
                           );
                         },
                       );
@@ -162,76 +203,90 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
             ),
             const SizedBox(height: 10),
 
+            // Recipe Body
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ✅ Recipe Name
+                  // Recipe Name
                   Text(
                     recipeDetails!["Name"],
                     style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 10),
 
-                  // ✅ Description
+                  // Description
                   Text(
                     recipeDetails!["Description"],
-                    style: const TextStyle(fontSize: 16, color: Colors.black54,),
-                    // textAlign: TextAlign.justify
+                    style: const TextStyle(fontSize: 16, color: Colors.black54),
                   ),
                   const SizedBox(height: 20),
 
-                  // ✅ Ingredients Section
+                  // Ingredients
                   const Text("Ingredients", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
-                  ...recipeDetails!["Ingredients"].map(
-                        (ingredient) => Padding(
+                  for (var ingredient in ingredientsList)
+                    Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text("• ", style: TextStyle(fontSize: 16)),
                           Expanded(
-                              child: Text(
-                                _capitalizeFirstWord(ingredient),  // ✅ Apply function to capitalize each word
-                                style: const TextStyle(fontSize: 16),
-                                softWrap: true,
-                              )
+                            child: Text(
+                              _capitalizeFirstWord(ingredient),
+                              style: const TextStyle(fontSize: 16),
+                              softWrap: true,
+                            ),
                           )
                         ],
-                      )
+                      ),
                     ),
-                  ),
 
                   const SizedBox(height: 20),
 
-                  // ✅ Instructions Section
+                  // Instructions
                   const Text("Instructions", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
-                  ...recipeDetails!["Instructions"].asMap().entries.map(
-                        (entry) => Padding(
+                  for (int i = 0; i < instructionsList.length; i++)
+                    Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("${entry.key + 1}. ", style: const TextStyle(fontSize: 16)),
+                          Text("${i + 1}. ", style: const TextStyle(fontSize: 16)),
                           Expanded(
-                              child: Text(
-                                entry.value,
-                                style: const TextStyle(fontSize: 16),
-                                softWrap: true,
-                              )
+                            child: Text(
+                              instructionsList[i],
+                              style: const TextStyle(fontSize: 16),
+                              softWrap: true,
+                            ),
                           )
                         ],
-                      )
+                      ),
                     ),
+
+                  const SizedBox(height: 20),
+
+                  // Keywords
+                  const Text("Keywords", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: keywordsList.map((keyword) {
+                      return Chip(
+                        label: Text(keyword),
+                        backgroundColor: Colors.grey[200],
+                      );
+                    }).toList(),
                   ),
 
                   const SizedBox(height: 20),
 
-                  // ✅ Nutrition Facts
-                  const Text("Nutrition Facts", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+                  // Nutrition Info
+                  const Text("Nutrition Info (Per serving)", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
                   _buildNutritionRow("Calories", "${recipeDetails?["Calories"]} kcal"),
                   _buildNutritionRow("Fat", "${recipeDetails?["FatContent"]} g"),
@@ -250,7 +305,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
     );
   }
 
-  // ✅ Function to Build Nutrition Row
+  /// Helper to build each row in "Nutrition Facts"
   Widget _buildNutritionRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),

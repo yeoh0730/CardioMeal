@@ -121,7 +121,11 @@ class _SelectRecipesPageState extends State<SelectRecipesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Log Meals")),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+          backgroundColor: Colors.white,
+          title: const Text("Log Meals")
+      ),
       body: Column(
         children: [
           Padding(

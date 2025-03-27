@@ -192,14 +192,15 @@ class _DiaryPageState extends State<DiaryPage> {
           const SizedBox(height: 8),
           _buildMealSection('Breakfast', Colors.red),
           _buildMealSection('Lunch', Colors.orange),
-          _buildMealSection('Dinner', Colors.teal),
-          _buildMealSection('Snacks', Colors.purple),
+          _buildMealSection('Dinner', Colors.indigo),
+          _buildMealSection('Snacks', Colors.deepPurple),
         ],
       ),
     );
   }
 
   Widget _buildMealSection(String mealTitle, Color color) {
+    // Calculate macros for this meal
     Map<String, double> mealNutrition = _calculateMealNutrition(mealTitle);
 
     return Padding(
@@ -208,97 +209,118 @@ class _DiaryPageState extends State<DiaryPage> {
         color: Colors.white,
         elevation: 3,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16), // Larger radius for a softer look
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0), // Increase padding for a cleaner layout
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        // Wrap the Row in IntrinsicHeight
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch, // Now valid with IntrinsicHeight
             children: [
-              // ====== Title Row ======
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Thick colored strip
-                  Container(
-                    width: 8,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: color,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
+              // Left color strip
+              Container(
+                width: 8,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    bottomLeft: Radius.circular(16),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      mealTitle,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  // Add meal icon
-                  IconButton(
-                    icon: const Icon(Icons.add_circle, color: Colors.red),
-                    onPressed: () => _navigateToRecipeSelection(mealTitle),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 8),
-
-              // ====== Nutrition Summary ======
-              Text(
-                "Total: ${mealNutrition["Calories"]} kcal | Sodium: ${mealNutrition["Sodium"]} mg | Fat: ${mealNutrition["Fat"]} g | Carbs: ${mealNutrition["Carbohydrates"]} g",
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey,
                 ),
               ),
 
-              // Only show a divider if there are items
-              if (_selectedMeals[mealTitle]!.isNotEmpty)
-                const SizedBox(height: 8),
-              if (_selectedMeals[mealTitle]!.isNotEmpty)
-                const Divider(),
-
-              // ====== Foods List ======
-              Column(
-                children: _selectedMeals[mealTitle]!.map((recipe) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(width: 8),
-                        // Food info
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                recipe["name"],
-                                style: const TextStyle(fontWeight: FontWeight.w400),
+              // Right side: meal info
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Title row
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              mealTitle,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                "Calories: ${recipe["calories"]} kcal | Sodium: ${recipe["sodium"]} mg | Fat: ${recipe["fat"]} g | Carbs: ${recipe["carbs"]} g",
-                                style: const TextStyle(fontSize: 13, color: Colors.black54),
-                              ),
-                            ],
+                            ),
                           ),
+                          IconButton(
+                            icon: const Icon(Icons.add_circle, color: Colors.red),
+                            onPressed: () => _navigateToRecipeSelection(mealTitle),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Nutrition summary
+                      Text(
+                        "Total: ${mealNutrition["Calories"]} kcal | "
+                            "Sodium: ${mealNutrition["Sodium"]} mg | "
+                            "Fat: ${mealNutrition["Fat"]} g | "
+                            "Carbs: ${mealNutrition["Carbohydrates"]} g",
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey,
                         ),
-                        // Delete icon
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _deleteFood(mealTitle, recipe),
-                        ),
+                      ),
+
+                      // Only show a divider if there are items
+                      if (_selectedMeals[mealTitle]!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        const Divider(),
                       ],
-                    ),
-                  );
-                }).toList(),
+
+                      // Foods list
+                      Column(
+                        children: _selectedMeals[mealTitle]!.map((recipe) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4.0),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        recipe["name"],
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w400,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        "Calories: ${recipe["calories"]} kcal | "
+                                            "Sodium: ${recipe["sodium"]} mg | "
+                                            "Fat: ${recipe["fat"]} g | "
+                                            "Carbs: ${recipe["carbs"]} g",
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.black54,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () => _deleteFood(mealTitle, recipe),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -306,5 +328,4 @@ class _DiaryPageState extends State<DiaryPage> {
       ),
     );
   }
-
 }
