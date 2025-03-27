@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'services/api_service.dart';
 import 'models/recipe_card.dart';
 
 class RecipePage extends StatefulWidget {
@@ -7,65 +9,97 @@ class RecipePage extends StatefulWidget {
   _RecipePageState createState() => _RecipePageState();
 }
 
-class _RecipePageState extends State<RecipePage> {
+class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateMixin {
+  // ====== For "All Recipes" Pagination & Search ======
   List<Map<String, dynamic>> recipes = [];
   List<Map<String, dynamic>> filteredRecipes = [];
+  DocumentSnapshot? _lastDocument;
+  bool _hasMore = true;
+  bool _isLoading = false;
+
+  // ====== Loading state for recommended recipes =====
+  bool _recommendedLoading = false;
+
+  // Filter
+  final List<String> mealTypes = ["Breakfast", "Lunch", "Dinner", "Dessert", "Snack", "Brunch"];
   List<String> selectedFilters = [];
+
+  // Search
   TextEditingController _searchController = TextEditingController();
 
-  DocumentSnapshot? _lastDocument;
-  bool _hasMore = true;  // True if we still have more pages to load
-  bool _isLoading = false; // True if we're currently loading a page
+  // ====== For "Recommended" tab, grouped by category ======
+  Map<String, List<Map<String, dynamic>>> _recommendedByCategory = {};
+  final List<String> _recommendedMealCategories = ["Breakfast", "Lunch", "Dinner", "Snacks"];
 
-  final List<String> mealTypes = [
-    "Breakfast",
-    "Lunch",
-    "Dinner",
-    "Dessert",
-    "Snack",
-    "Brunch"
-  ];
+  // ====== TabBar Controller ======
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
 
-    // 1) Listen for search bar changes
-    _searchController.addListener(() {
-      final text = _searchController.text;
-      if (text.isNotEmpty) {
-        // User typed something => stop auto-loading so we don't overwrite search results
-        // We don't do anything special here, just let them search locally
-      } else {
-        // User cleared search => optionally resume auto-loading
-        // if we haven't loaded everything yet
-        if (_hasMore && !_isLoading) {
-          _fetchAllPages();
-        }
-        // Also revert to showing all loaded recipes
-        setState(() {
-          filteredRecipes = List.from(recipes);
-        });
-      }
-    });
+    // Initialize TabController for 2 tabs: "Recommended" & "All Recipes"
+    _tabController = TabController(length: 2, vsync: this);
 
-    // 2) Start auto-fetching all pages in the background
+    // Start pagination for "All Recipes"
     _fetchAllPages();
+
+    // Fetch recommended recipes (grouped by category)
+    _fetchRecommendedRecipes();
   }
 
-  // ===== AUTO-FETCH ALL PAGES =====
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // ================================
+  //  RECOMMENDED RECIPES (with loading state)
+  // ================================
+  Future<void> _fetchRecommendedRecipes() async {
+    setState(() => _recommendedLoading = true); // Start loading
+    try {
+      final recData = await ApiService.fetchMealRecommendations();
+      // recData might look like:
+      // { "Breakfast": [...], "Lunch": [...], "Dinner": [...], "Snacks": [...] }
+
+      Map<String, List<Map<String, dynamic>>> byCat = {};
+      recData.forEach((cat, recList) {
+        if (recList is List) {
+          List<Map<String, dynamic>> items = [];
+          for (var item in recList) {
+            if (item is Map<String, dynamic>) {
+              items.add(item);
+            }
+          }
+          byCat[cat] = items;
+        }
+      });
+
+      setState(() {
+        _recommendedByCategory = byCat;
+      });
+      print("Loaded recommended recipes (grouped by category).");
+    } catch (error) {
+      print("Error fetching recommended recipes: $error");
+    } finally {
+      setState(() => _recommendedLoading = false); // Done loading
+    }
+  }
+
+  // ================================
+  //  PAGINATION FOR ALL RECIPES
+  // ================================
   Future<void> _fetchAllPages({int limit = 20}) async {
-    // Keep fetching while we have more docs,
-    // the widget is still mounted,
-    // and the user hasn't started typing a query.
-    while (_hasMore && mounted && _searchController.text.isEmpty) {
+    while (_hasMore && mounted) {
       await _fetchRecipes(limit: limit);
     }
   }
 
-  // ===== PAGINATED FETCH (One Page) =====
   Future<void> _fetchRecipes({int limit = 20}) async {
-    if (_isLoading || !_hasMore) return; // Prevent duplicate calls
+    if (_isLoading || !_hasMore) return;
     setState(() => _isLoading = true);
 
     Query query = FirebaseFirestore.instance
@@ -77,53 +111,56 @@ class _RecipePageState extends State<RecipePage> {
     }
 
     QuerySnapshot snapshot = await query.get();
-
     if (snapshot.docs.isNotEmpty) {
-      _lastDocument = snapshot.docs.last; // new last doc
+      _lastDocument = snapshot.docs.last;
       List<Map<String, dynamic>> newRecipes = [];
-
       for (var doc in snapshot.docs) {
         Map<String, dynamic> recipeData = doc.data() as Map<String, dynamic>;
         newRecipes.add({
           "RecipeId": doc.id,
           "Name": recipeData["Name"] ?? "No Name",
           "TotalTime": recipeData["TotalTime"] ?? "N/A",
-          "Images": recipeData['Images'] ?? '',
+          "Images": recipeData["Images"] ?? "",
           "Keywords": recipeData["Keywords"] ?? "",
         });
       }
-
       setState(() {
         recipes.addAll(newRecipes);
-        // If the user hasn't typed a search, show all loaded recipes
+        // If no search text, show all
         if (_searchController.text.isEmpty) {
           filteredRecipes = List.from(recipes);
         }
       });
     } else {
-      // No more docs
       setState(() {
         _hasMore = false;
       });
     }
-
     setState(() => _isLoading = false);
   }
 
-  // ===== LOCAL SEARCH FILTER =====
+  // ================================
+  //  LOCAL SEARCH
+  // ================================
   void _filterRecipes(String query) {
-    // Filter among the currently loaded recipes
-    List<Map<String, dynamic>> results = recipes.where((recipe) {
+    if (query.isEmpty) {
+      setState(() {
+        filteredRecipes = List.from(recipes);
+      });
+      return;
+    }
+    final results = recipes.where((recipe) {
       final name = recipe["Name"].toLowerCase();
       return name.contains(query.toLowerCase());
     }).toList();
-
     setState(() {
       filteredRecipes = results;
     });
   }
 
-  // ===== FILTER DIALOG =====
+  // ================================
+  //  FILTER DIALOG
+  // ================================
   void _openFilterDialog() {
     showDialog(
       context: context,
@@ -188,7 +225,6 @@ class _RecipePageState extends State<RecipePage> {
     );
   }
 
-  // ===== APPLY FILTER =====
   void _applyFilter() {
     if (selectedFilters.isEmpty) {
       setState(() {
@@ -196,9 +232,8 @@ class _RecipePageState extends State<RecipePage> {
       });
       return;
     }
-
-    List<Map<String, dynamic>> results = recipes.where((recipe) {
-      String keywords = recipe["Keywords"].toString().toLowerCase();
+    final results = recipes.where((recipe) {
+      final keywords = recipe["Keywords"].toLowerCase();
       return selectedFilters.any((filter) => keywords.contains(filter.toLowerCase()));
     }).toList();
 
@@ -207,94 +242,196 @@ class _RecipePageState extends State<RecipePage> {
     });
   }
 
-  // ===== MAIN BUILD =====
+  // ================================
+  //  BUILD
+  // ================================
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        elevation: 0,
+    return DefaultTabController(
+      length: 2, // "Recommended" & "All Recipes"
+      child: Scaffold(
         backgroundColor: Colors.white,
-        title: Container(
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(30),
-          ),
-          child: TextField(
-            controller: _searchController,
-            onChanged: _filterRecipes, // local filtering among loaded recipes
-            decoration: InputDecoration(
-              hintText: 'Search recipes',
-              hintStyle: const TextStyle(color: Colors.grey),
-              border: InputBorder.none,
-              prefixIcon: const Icon(Icons.search, color: Colors.grey),
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
-                icon: const Icon(Icons.clear, color: Colors.grey),
-                onPressed: () {
-                  _searchController.clear();
-                  _filterRecipes('');
-                },
-              )
-                  : null,
-              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(48), // or your custom height
+          child: AppBar(
+            backgroundColor: Colors.white,
+            elevation: 0,
+            titleSpacing: 0,
+            bottom: TabBar(
+              tabs: [
+                Tab(text: "Recommended"),
+                Tab(text: "All Recipes"),
+              ],
+              // Optionally customize tab style, e.g.:
+              // labelColor: Colors.purple,
+              // unselectedLabelColor: Colors.grey,
+              // indicatorColor: Colors.purple,
             ),
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_alt_rounded, color: Colors.black),
-            onPressed: _openFilterDialog,
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        body: TabBarView(
           children: [
-            const Text(
-              "Recipes",
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-            const SizedBox(height: 16),
+            // 1) Recommended Tab
+            _buildRecommendedTab(),
 
-            Expanded(
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: GridView.builder(
-                      padding: const EdgeInsets.only(bottom: 80),
-                      itemCount: filteredRecipes.length,
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 3 / 4,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                      ),
-                      itemBuilder: (context, index) {
-                        final recipe = filteredRecipes[index];
-                        return RecipeCard(
-                          title: recipe["Name"],
-                          totalTime: recipe["TotalTime"],
-                          imageUrl: recipe["Images"],
-                          recipeId: recipe["RecipeId"],
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            // 2) All Recipes Tab
+            _buildAllRecipesTab(),
           ],
         ),
       ),
+    );
+  }
+
+  // ================================
+  //  RECOMMENDED TAB (Horizontal Rows)
+  // ================================
+  Widget _buildRecommendedTab() {
+    // 1) If still loading recommended recipes, show spinner
+    if (_recommendedLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // 2) If done loading but empty
+    if (_recommendedByCategory.isEmpty) {
+      return const Center(child: Text("No recommended recipes found."));
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: _recommendedMealCategories.map((category) {
+          final categoryList = _recommendedByCategory[category] ?? [];
+          if (categoryList.isEmpty) {
+            return const SizedBox.shrink();
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Category Title
+              Text(
+                category,
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+
+              // Single horizontal row
+              SizedBox(
+                // Increase if needed to avoid overflow
+                height: 230,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: categoryList.length,
+                  itemBuilder: (context, index) {
+                    final recipe = categoryList[index];
+                    return Container(
+                      width: 160,
+                      margin: const EdgeInsets.only(right: 8),
+                      child: RecipeCard(
+                        title: recipe["Name"] ?? "No Name",
+                        totalTime: recipe["TotalTime"] ?? "N/A",
+                        imageUrl: recipe["Images"] ?? "",
+                        recipeId: (recipe["RecipeId"] ?? "").toString(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // ================================
+  //  ALL RECIPES TAB (Grid)
+  // ================================
+  Widget _buildAllRecipesTab() {
+    return Column(
+      children: [
+        // Search bar & filter for All Recipes tab
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Row(
+            children: [
+              // Expanded search bar
+              Expanded(
+                child: Container(
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: _filterRecipes,
+                    decoration: InputDecoration(
+                      hintText: 'Search recipes',
+                      hintStyle: const TextStyle(color: Colors.grey),
+                      border: InputBorder.none,
+                      prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.grey),
+                        onPressed: () {
+                          _searchController.clear();
+                          _filterRecipes('');
+                        },
+                      )
+                          : null,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Filter button
+              IconButton(
+                icon: const Icon(Icons.filter_alt_rounded, color: Colors.black),
+                onPressed: _openFilterDialog,
+              ),
+            ],
+          ),
+        ),
+
+        // The recipes grid
+        Expanded(
+          child: Stack(
+            children: [
+              GridView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                itemCount: filteredRecipes.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 3 / 4,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                ),
+                itemBuilder: (context, index) {
+                  final recipe = filteredRecipes[index];
+                  return RecipeCard(
+                    title: recipe["Name"],
+                    totalTime: recipe["TotalTime"],
+                    imageUrl: recipe["Images"],
+                    recipeId: recipe["RecipeId"],
+                  );
+                },
+              ),
+              // if (_isLoading)
+              //   const Align(
+              //     alignment: Alignment.bottomCenter,
+              //     child: Padding(
+              //       padding: EdgeInsets.all(8.0),
+              //       child: CircularProgressIndicator(),
+              //     ),
+              //   ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
