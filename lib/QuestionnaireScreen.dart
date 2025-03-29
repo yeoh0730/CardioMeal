@@ -161,12 +161,12 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           .collection("healthMetrics")
           .doc(timestamp)
           .set({
-        "cholesterol": _cholesterolController.text.trim(),
-        "systolicBP": _systolicBPController.text.trim(),
-        "diastolicBP": _diastolicBPController.text.trim(),
-        "bloodGlucose": _bloodGlucoseController.text.trim(),
-        "restingHeartRate": _heartRateController.text.trim(),
-        "timestamp": timestamp,
+        "cholesterol": double.tryParse(_cholesterolController.text.trim()) ?? 0,
+        "systolicBP": double.tryParse(_systolicBPController.text.trim()) ?? 0,
+        "diastolicBP": double.tryParse(_diastolicBPController.text.trim()) ?? 0,
+        "bloodGlucose": double.tryParse(_bloodGlucoseController.text.trim()) ?? 0,
+        "heartRate": double.tryParse(_heartRateController.text.trim()) ?? 0,
+        "timestamp": FieldValue.serverTimestamp(),
       });
 
       // 4) Navigate to Home
