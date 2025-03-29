@@ -3,8 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'SelectRecipesPage.dart';
-import 'models/DashboardView.dart';
-import 'models/custom_toggle_bar.dart';
+import 'package:percent_indicator/circular_percent_indicator.dart';
 
 class DiaryPage extends StatefulWidget {
   @override
@@ -12,7 +11,6 @@ class DiaryPage extends StatefulWidget {
 }
 
 class _DiaryPageState extends State<DiaryPage> {
-  bool isLogMealSelected = true;
   DateTime _selectedDate = DateTime.now();
   Map<String, List<Map<String, dynamic>>> _selectedMeals = {
     "Breakfast": [],
@@ -49,9 +47,9 @@ class _DiaryPageState extends State<DiaryPage> {
     for (var doc in snapshot.docs) {
       Map<String, dynamic> mealData = doc.data() as Map<String, dynamic>;
       String mealType = mealData["mealType"];
-      mealData['id'] = doc.id; // Store meal document ID for deletion
+      mealData['id'] = doc.id;
 
-      newMeals[mealType] = List<Map<String, dynamic>>.from(mealData["foods"]);
+      newMeals[mealType] = List<Map<String, dynamic>>.from(mealData["foods"] ?? []);
     }
 
     setState(() {
@@ -64,8 +62,6 @@ class _DiaryPageState extends State<DiaryPage> {
     if (user == null) return;
 
     String formattedDate = DateFormat('yyyy-MM-dd').format(_selectedDate);
-
-    // Find the meal document for the given meal type
     QuerySnapshot snapshot = await FirebaseFirestore.instance
         .collection("users")
         .doc(user.uid)
@@ -76,13 +72,10 @@ class _DiaryPageState extends State<DiaryPage> {
 
     if (snapshot.docs.isNotEmpty) {
       DocumentReference mealDoc = snapshot.docs.first.reference;
-
-      // Remove only the selected food item
       await mealDoc.update({
         "foods": FieldValue.arrayRemove([foodItem])
       });
-
-      _fetchLoggedMeals(); // Refresh UI after deletion
+      _fetchLoggedMeals();
     }
   }
 
@@ -105,14 +98,19 @@ class _DiaryPageState extends State<DiaryPage> {
   Future<void> _navigateToRecipeSelection(String mealTitle) async {
     bool? mealAdded = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => SelectRecipesPage(mealType: mealTitle, selectedDate: _selectedDate)),
+      MaterialPageRoute(
+        builder: (context) => SelectRecipesPage(
+          mealType: mealTitle,
+          selectedDate: _selectedDate,
+        ),
+      ),
     );
-
     if (mealAdded == true) {
       _fetchLoggedMeals();
     }
   }
 
+  /// Calculate macros for a given meal
   Map<String, double> _calculateMealNutrition(String mealTitle) {
     double totalCalories = 0, totalFat = 0, totalCarbs = 0, totalSodium = 0;
 
@@ -131,77 +129,139 @@ class _DiaryPageState extends State<DiaryPage> {
     };
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: const Text(
-          'Diary',
-          style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold, color: Colors.black),
-        ),
-        centerTitle: true,
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-            child: CustomToggleBar(
-              isSelected: isLogMealSelected,
-              onToggle: (bool isSelected) {
-                setState(() {
-                  isLogMealSelected = isSelected;
-                });
-              },
-            ),
-          ),
-          const SizedBox(height: 5),
-          Expanded(
-            child: isLogMealSelected ? _buildLogMealView() : DashboardView(),
+  /// Example daily goal placeholders
+  final double dailyGoal = 1618; // In a real app, fetch from user profile
+  final double consumed = 0;     // Placeholder
+  double get left => (dailyGoal - consumed).clamp(0, dailyGoal);
+
+  /// Build top "Daily Goal" portion with a larger ring + macros
+  Widget _buildDailyGoalSection() {
+    // We'll wrap this entire design in a container with a shadow
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          // Slight shadow to make it pop
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.15),
+            spreadRadius: 2,
+            blurRadius: 10,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildLogMealView() {
-    bool isToday = DateFormat('yyyy-MM-dd').format(_selectedDate) ==
-        DateFormat('yyyy-MM-dd').format(DateTime.now());
-
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: ListView(
+      child: Column(
         children: [
+          const SizedBox(height: 10),
+
+          // Larger circular indicator for "calories left"
+          // We can use a CircularPercentIndicator or our own approach
+          // Here, let's use the percent_indicator package for a nice ring
+          CircularPercentIndicator(
+            radius: 60, // bigger radius
+            lineWidth: 12, // thicker ring
+            percent: (consumed / dailyGoal).clamp(0, 1),
+            backgroundColor: Colors.grey[200]!,
+            progressColor: Colors.green,
+            center: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  left.toStringAsFixed(0),
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const Text("calories left", style: TextStyle(fontSize: 14)),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // Macros row: Carbs, Sodium, Fat
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              Text(
-                isToday ? "Today" : DateFormat('yyyy-MM-dd').format(_selectedDate),
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              // Carbs
+              Column(
+                children: const [
+                  Text(
+                    "Carbs",
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 4),
+                  Text("0/192g", style: TextStyle(fontSize: 14)),
+                ],
               ),
-              IconButton(
-                icon: const Icon(Icons.calendar_today, color: Colors.black),
-                onPressed: _pickDate,
+              // Sodium
+              Column(
+                children: const [
+                  Text(
+                    "Sodium",
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 4),
+                  Text("0/99g", style: TextStyle(fontSize: 14)),
+                ],
+              ),
+              // Fat
+              Column(
+                children: const [
+                  Text(
+                    "Fat",
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 4),
+                  Text("0/45g", style: TextStyle(fontSize: 14)),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          _buildMealSection('Breakfast', Colors.red),
-          _buildMealSection('Lunch', Colors.orange),
-          _buildMealSection('Dinner', Colors.indigo),
-          _buildMealSection('Snacks', Colors.deepPurple),
         ],
       ),
     );
   }
 
+  /// Build the main ListView: daily goal + date row + meal sections
+  Widget _buildDiaryList() {
+    bool isToday = DateFormat('yyyy-MM-dd').format(_selectedDate) ==
+        DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+    return ListView(
+      children: [
+        // 1) Top daily goal card
+        _buildDailyGoalSection(),
+
+        // 2) The date row
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              isToday ? "Today" : DateFormat('yyyy-MM-dd').format(_selectedDate),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            IconButton(
+              icon: const Icon(Icons.calendar_today, color: Colors.black),
+              onPressed: _pickDate,
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+
+        // 3) The meal sections
+        _buildMealSection('Breakfast', Colors.red),
+        _buildMealSection('Lunch', Colors.orange),
+        _buildMealSection('Dinner', Colors.indigo),
+        _buildMealSection('Snacks', Colors.deepPurple),
+      ],
+    );
+  }
+
+  /// Build each meal section card
   Widget _buildMealSection(String mealTitle, Color color) {
-    // Calculate macros for this meal
-    Map<String, double> mealNutrition = _calculateMealNutrition(mealTitle);
+    final mealNutrition = _calculateMealNutrition(mealTitle);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -211,10 +271,9 @@ class _DiaryPageState extends State<DiaryPage> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        // Wrap the Row in IntrinsicHeight
         child: IntrinsicHeight(
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch, // Now valid with IntrinsicHeight
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Left color strip
               Container(
@@ -227,15 +286,13 @@ class _DiaryPageState extends State<DiaryPage> {
                   ),
                 ),
               ),
-
-              // Right side: meal info
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Title row
+                      // Title row + add button
                       Row(
                         children: [
                           Expanded(
@@ -255,7 +312,6 @@ class _DiaryPageState extends State<DiaryPage> {
                         ],
                       ),
                       const SizedBox(height: 8),
-
                       // Nutrition summary
                       Text(
                         "Total: ${mealNutrition["Calories"]} kcal | "
@@ -268,13 +324,10 @@ class _DiaryPageState extends State<DiaryPage> {
                           color: Colors.grey,
                         ),
                       ),
-
-                      // Only show a divider if there are items
                       if (_selectedMeals[mealTitle]!.isNotEmpty) ...[
                         const SizedBox(height: 8),
                         const Divider(),
                       ],
-
                       // Foods list
                       Column(
                         children: _selectedMeals[mealTitle]!.map((recipe) {
@@ -325,6 +378,28 @@ class _DiaryPageState extends State<DiaryPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Main build
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        elevation: 0,
+        backgroundColor: Colors.white,
+        title: const Text(
+          'Diary',
+          style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold, color: Colors.black),
+        ),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: _buildDiaryList(),
       ),
     );
   }

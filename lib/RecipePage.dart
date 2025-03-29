@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'services/api_service.dart';
 import 'models/recipe_card.dart';
 
@@ -296,53 +295,51 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
       return const Center(child: Text("No recommended recipes found."));
     }
 
-    return SingleChildScrollView(
+    return ListView(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: _recommendedMealCategories.map((category) {
-          final categoryList = _recommendedByCategory[category] ?? [];
-          if (categoryList.isEmpty) {
-            return const SizedBox.shrink();
-          }
+      children: _recommendedMealCategories.map((category) {
+        final categoryList = _recommendedByCategory[category] ?? [];
+        if (categoryList.isEmpty) {
+          return const SizedBox.shrink();
+        }
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Category Title
-              Text(
-                category,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Category Title
+            Text(
+              category,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
 
-              // Single horizontal row
-              SizedBox(
-                // Increase if needed to avoid overflow
-                height: 230,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: categoryList.length,
-                  itemBuilder: (context, index) {
-                    final recipe = categoryList[index];
-                    return Container(
-                      width: 160,
-                      margin: const EdgeInsets.only(right: 8),
-                      child: RecipeCard(
-                        title: recipe["Name"] ?? "No Name",
-                        totalTime: recipe["TotalTime"] ?? "N/A",
-                        imageUrl: recipe["Images"] ?? "",
-                        recipeId: (recipe["RecipeId"] ?? "").toString(),
-                      ),
-                    );
-                  },
-                ),
+            // Single horizontal row
+            SizedBox(
+              height: 230,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: categoryList.length,
+                itemBuilder: (context, index) {
+                  final recipe = categoryList[index];
+                  // Optionally remove right margin for the last item
+                  final isLast = (index == categoryList.length - 1);
+                  return Container(
+                    width: 160,
+                    margin: EdgeInsets.only(right: isLast ? 0 : 8),
+                    child: RecipeCard(
+                      title: recipe["Name"] ?? "No Name",
+                      totalTime: recipe["TotalTime"] ?? "N/A",
+                      imageUrl: recipe["Images"] ?? "",
+                      recipeId: (recipe["RecipeId"] ?? "").toString(),
+                    ),
+                  );
+                },
               ),
-              const SizedBox(height: 12),
-            ],
-          );
-        }).toList(),
-      ),
+            ),
+            const SizedBox(height: 12),
+          ],
+        );
+      }).toList(),
     );
   }
 

@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:project/HomePage.dart';
 import 'package:project/DiaryPage.dart';
+import 'package:project/DashboardPage.dart';
 import 'package:project/ProfilePage.dart';
 import 'package:project/RecipePage.dart';
 import 'package:project/RecipeDetailPage.dart';
@@ -82,8 +82,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // List of pages
   final List<Widget> _pages = [
-    HomePage(),
     DiaryPage(),
+    DashboardPage(),
     RecipePage(),
     ProfilePage(),
   ];
@@ -108,11 +108,11 @@ class _HomeScreenState extends State<HomeScreen> {
         items: [
           const BottomNavigationBarItem(
             icon: Icon(Icons.home),
-            label: 'Home',
+            label: 'Diary',
           ),
           const BottomNavigationBarItem(
             icon: Icon(Icons.book),
-            label: 'Diary',
+            label: 'Dashboard',
           ),
           const BottomNavigationBarItem(
             icon: Icon(Icons.restaurant_menu),

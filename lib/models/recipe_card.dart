@@ -109,9 +109,13 @@ class RecipeCard extends StatelessWidget {
                     children: [
                       const Icon(Icons.access_time, size: 16, color: Colors.green),
                       const SizedBox(width: 4),
-                      Text(
-                        totalTime,
-                        style: const TextStyle(fontSize: 13, color: Colors.black54),
+                      Flexible(
+                        child: Text(
+                          totalTime,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 13, color: Colors.black54),
+                        ),
                       ),
                     ],
                   ),
