@@ -12,9 +12,10 @@ class SignUpPage extends StatefulWidget {
 class _SignUpPageState extends State<SignUpPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
+  final TextEditingController _confirmPasswordController = TextEditingController();
 
   bool _obscurePassword = true;
+  bool _obscurePassword1 = true;
   bool _isLoading = false;
   String _errorMessage = '';
 
@@ -22,10 +23,18 @@ class _SignUpPageState extends State<SignUpPage> {
   void _goToQuestionnaire() {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
       setState(() {
         _errorMessage = "Please enter an email and password.";
+      });
+      return;
+    }
+
+    if (password != confirmPassword) {
+      setState(() {
+        _errorMessage = "Passwords do not match.";
       });
       return;
     }
@@ -110,14 +119,50 @@ class _SignUpPageState extends State<SignUpPage> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 15),
+
+                // Confirm Password TextField
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color.fromRGBO(196, 196, 196, 0.2),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: TextField(
+                    controller: _confirmPasswordController,
+                    obscureText: _obscurePassword1,
+                    decoration: InputDecoration(
+                      hintText: "Confirm your password",
+                      hintStyle: TextStyle(
+                          color: Colors.black.withAlpha((0.4 * 255).toInt())),
+                      prefixIcon: const Icon(Icons.lock, color: Colors.grey),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword1 ? Icons.visibility_off : Icons.visibility,
+                          color: Colors.grey,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword1 = !_obscurePassword1;
+                          });
+                        },
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 15, horizontal: 20),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 30),
 
                 _isLoading
                     ? const CircularProgressIndicator()
-                    : CustomButton(
-                  text: "Sign Up",
-                  onPressed: _goToQuestionnaire,
-                ),
+                    : SizedBox(
+                    width: double.infinity,
+                    child: CustomButton(
+                      text: "Sign Up",
+                      onPressed: _goToQuestionnaire,
+                    )
+                  ),
                 const SizedBox(height: 8),
 
                 RichText(
@@ -128,7 +173,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         style: TextStyle(color: Colors.black, fontFamily: 'Poppins'),
                       ),
                       TextSpan(
-                        text: "Login",
+                        text: "Log In",
                         style: const TextStyle(
                           color: Colors.red,
                         ),

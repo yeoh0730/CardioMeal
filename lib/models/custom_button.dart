@@ -22,7 +22,7 @@ class CustomButton extends StatelessWidget {
         foregroundColor: textColor, // Text color
         padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12), // Button size
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12), // **Reduce this for squarer edges**
+          borderRadius: BorderRadius.circular(25), // **Reduce this for squarer edges**
         ),
       ),
       child: Text(text, style: TextStyle(color: textColor)),

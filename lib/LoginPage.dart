@@ -59,9 +59,12 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 30),
 
                 // ✅ Reusable Login Button
-                CustomButton(
-                  text: "Login",
-                  onPressed: _signIn,
+                SizedBox(
+                    width: double.infinity,
+                    child: CustomButton(
+                      text: "Log In",
+                      onPressed: _signIn,
+                    )
                 ),
 
                 const SizedBox(height: 8),
