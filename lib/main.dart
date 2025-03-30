@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:project/DiaryPage.dart';
 import 'package:project/DashboardPage.dart';
 import 'package:project/ProfilePage.dart';
@@ -12,6 +13,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Ensure Flutter bindings are initialized
   await Firebase.initializeApp(); // Initialize Firebase
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark, // or dark
+    ),
+  );
   runApp(MyApp());
 }
 
@@ -91,6 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: _pages[_currentIndex], // Display the selected page
       ),
@@ -107,11 +115,11 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         items: [
           const BottomNavigationBarItem(
-            icon: Icon(Icons.home),
+            icon: Icon(Icons.book),
             label: 'Diary',
           ),
           const BottomNavigationBarItem(
-            icon: Icon(Icons.book),
+            icon: Icon(Icons.bar_chart),
             label: 'Dashboard',
           ),
           const BottomNavigationBarItem(

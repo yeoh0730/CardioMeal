@@ -269,8 +269,19 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
 
                   const SizedBox(height: 20),
 
-                  // Keywords
-                  const Text("Keywords", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+                  // Nutrition Info
+                  const Text("Nutrition Info (Per serving)", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  _buildNutritionRow("Calories", "${recipeDetails?["Calories"]} kcal"),
+                  _buildNutritionRow("Fat", "${recipeDetails?["FatContent"]} g"),
+                  _buildNutritionRow("Carbs", "${recipeDetails?["CarbohydrateContent"]} g"),
+                  _buildNutritionRow("Protein", "${recipeDetails?["ProteinContent"]} g"),
+                  _buildNutritionRow("Sodium", "${recipeDetails?["SodiumContent"]} mg"),
+                  _buildNutritionRow("Cholesterol", "${recipeDetails?["CholesterolContent"]} mg"),
+// Keywords
+                  const SizedBox(height: 20),
+
+                  const Text("Tags", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
                   Wrap(
                     spacing: 8,
@@ -282,18 +293,6 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                       );
                     }).toList(),
                   ),
-
-                  const SizedBox(height: 20),
-
-                  // Nutrition Info
-                  const Text("Nutrition Info (Per serving)", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 10),
-                  _buildNutritionRow("Calories", "${recipeDetails?["Calories"]} kcal"),
-                  _buildNutritionRow("Fat", "${recipeDetails?["FatContent"]} g"),
-                  _buildNutritionRow("Carbs", "${recipeDetails?["CarbohydrateContent"]} g"),
-                  _buildNutritionRow("Protein", "${recipeDetails?["ProteinContent"]} g"),
-                  _buildNutritionRow("Sodium", "${recipeDetails?["SodiumContent"]} mg"),
-                  _buildNutritionRow("Cholesterol", "${recipeDetails?["CholesterolContent"]} mg"),
 
                   const SizedBox(height: 30),
                 ],

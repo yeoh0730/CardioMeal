@@ -102,7 +102,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       }
                     });
                   }),
-                  _buildOption(Icons.logout, "Logout", _showLogoutConfirmationDialog, isLogout: true),
+                  _buildOption(Icons.logout, "Log Out", _showLogoutConfirmationDialog, isLogout: true),
                 ],
               ),
             ),
@@ -144,7 +144,7 @@ class _ProfilePageState extends State<ProfilePage> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: Colors.white,
-          title: const Text("Logout"),
+          title: const Text("Log Out"),
           content: const Text("Are you sure you want to log out?"),
           actions: [
             TextButton(
