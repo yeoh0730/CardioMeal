@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class RecipeDetailPage extends StatefulWidget {
   final String recipeId;
@@ -13,6 +14,7 @@ class RecipeDetailPage extends StatefulWidget {
 class _RecipeDetailPageState extends State<RecipeDetailPage> {
   Map<String, dynamic>? recipeDetails;
   bool isLoading = true;
+  bool isFavorited = false; // Track favorite status
 
   // Controller for PageView (images carousel)
   final PageController _pageController = PageController();
@@ -21,6 +23,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
   void initState() {
     super.initState();
     _fetchRecipeDetails();
+    _checkIfFavorited();
   }
 
   // Fetch recipe details from Firestore
@@ -70,6 +73,49 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
       print("⚠️ Error fetching recipe details: $e");
       setState(() {
         isLoading = false;
+      });
+    }
+  }
+
+  // Check if the recipe is already favorited by the user
+  Future<void> _checkIfFavorited() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final favDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('favorites')
+        .doc(widget.recipeId)
+        .get();
+    setState(() {
+      isFavorited = favDoc.exists;
+    });
+  }
+
+  // Toggle the favorite status of the recipe
+  Future<void> _toggleFavorite() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return; // Optionally, prompt login
+    final favDocRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('favorites')
+        .doc(widget.recipeId);
+
+    if (isFavorited) {
+      // Remove favorite
+      await favDocRef.delete();
+      setState(() {
+        isFavorited = false;
+      });
+    } else {
+      // Add favorite
+      await favDocRef.set({
+        'addedAt': FieldValue.serverTimestamp(),
+        // Optionally store more fields, like recipe title or image.
+      });
+      setState(() {
+        isFavorited = true;
       });
     }
   }
@@ -180,6 +226,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                     },
                   ),
                 ),
+                // Back button
                 Positioned(
                   top: 40,
                   left: 15,
@@ -191,18 +238,25 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                     ),
                   ),
                 ),
+                // Favorite icon (clickable)
                 Positioned(
                   top: 40,
                   right: 15,
-                  child: const CircleAvatar(
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.bookmark_border, color: Colors.black),
+                  child: GestureDetector(
+                    onTap: _toggleFavorite,
+                    behavior: HitTestBehavior.opaque,
+                    child: CircleAvatar(
+                      backgroundColor: Colors.white,
+                      child: Icon(
+                        isFavorited ? Icons.favorite : Icons.favorite_border,
+                        color: isFavorited ? Colors.red : Colors.black,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 10),
-
             // Recipe Body
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -215,14 +269,12 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                     style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 10),
-
                   // Description
                   Text(
                     recipeDetails!["Description"],
                     style: const TextStyle(fontSize: 16, color: Colors.black54),
                   ),
                   const SizedBox(height: 20),
-
                   // Ingredients
                   const Text("Ingredients", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
@@ -243,9 +295,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                         ],
                       ),
                     ),
-
                   const SizedBox(height: 20),
-
                   // Instructions
                   const Text("Instructions", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
@@ -266,9 +316,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                         ],
                       ),
                     ),
-
                   const SizedBox(height: 20),
-
                   // Nutrition Info
                   const Text("Nutrition Info (Per serving)", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
@@ -278,9 +326,8 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                   _buildNutritionRow("Protein", "${recipeDetails?["ProteinContent"]} g"),
                   _buildNutritionRow("Sodium", "${recipeDetails?["SodiumContent"]} mg"),
                   _buildNutritionRow("Cholesterol", "${recipeDetails?["CholesterolContent"]} mg"),
-// Keywords
                   const SizedBox(height: 20),
-
+                  // Tags/Keywords
                   const Text("Tags", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
                   Wrap(
@@ -293,7 +340,6 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                       );
                     }).toList(),
                   ),
-
                   const SizedBox(height: 30),
                 ],
               ),
@@ -312,7 +358,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.normal)),
+          Text(value, style: const TextStyle(fontSize: 16)),
         ],
       ),
     );

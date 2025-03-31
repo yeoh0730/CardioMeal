@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'EditProfilePage.dart';
 import 'EditDietPreferencePage.dart';
+import 'FavouriteRecipesPage.dart';
 import 'LoginPage.dart';
 import 'models/custom_button.dart';
 
@@ -205,7 +206,10 @@ class _ProfilePageState extends State<ProfilePage> {
                         icon: Icons.favorite_border,
                         title: "Favourite Recipes",
                         onTap: () {
-                          // TODO: Navigate
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => FavoriteRecipesPage()),
+                          );
                         },
                       ),
                       _dividerLine(),

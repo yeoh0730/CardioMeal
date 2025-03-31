@@ -5,24 +5,31 @@ class RecipeCard extends StatelessWidget {
   final String totalTime;
   final String imageUrl;
   final String recipeId;
+  final bool isFavorited;
+  final VoidCallback onFavoriteTap;
+  final VoidCallback? onCardTap; // New optional callback
 
   const RecipeCard({
     required this.title,
     required this.totalTime,
     required this.imageUrl,
     required this.recipeId,
+    required this.isFavorited,
+    required this.onFavoriteTap,
+    this.onCardTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        Navigator.pushNamed(
-          context,
-          '/recipeDetail',
-          arguments: recipeId,
-        );
-      },
+      onTap: onCardTap ??
+              () {
+            Navigator.pushNamed(
+              context,
+              '/recipeDetail',
+              arguments: recipeId,
+            );
+          },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -70,22 +77,31 @@ class RecipeCard extends StatelessWidget {
                   ),
 
                   // Bookmark (or favorite) icon on top-right
+                  // FAVORITE ICON on top-right
                   Positioned(
                     top: 10,
                     right: 10,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.8),
-                        shape: BoxShape.circle,
-                      ),
-                      padding: const EdgeInsets.all(6),
-                      child: const Icon(
-                        Icons.favorite_border,
-                        color: Colors.black,
-                        size: 22,
+                    child: InkWell(
+                      // behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        // This callback will handle the toggle without triggering the parent tap.
+                        onFavoriteTap();
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.8),
+                          shape: BoxShape.circle,
+                        ),
+                        padding: const EdgeInsets.all(6),
+                        child: Icon(
+                          isFavorited ? Icons.favorite : Icons.favorite_border,
+                          color: isFavorited ? Colors.red : Colors.black,
+                          size: 22,
+                        ),
                       ),
                     ),
                   ),
+
                 ],
               ),
             ),

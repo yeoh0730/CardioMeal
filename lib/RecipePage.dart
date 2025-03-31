@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'models/custom_button.dart';
@@ -13,6 +14,7 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
   // ====== For "All Recipes" Pagination & Search ======
   List<Map<String, dynamic>> recipes = [];
   List<Map<String, dynamic>> filteredRecipes = [];
+  Set<String> userFavorites = {};
   DocumentSnapshot? _lastDocument;
   bool _hasMore = true;
   bool _isLoading = false;
@@ -46,6 +48,60 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
 
     // Fetch recommended recipes (grouped by category)
     _fetchRecommendedRecipes();
+
+    // NEW: Fetch the user's favorite IDs
+    _loadUserFavorites();
+  }
+
+  // Fetch favorite docs for the logged-in user
+  Future<void> _loadUserFavorites() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return; // handle not logged in if needed
+
+    try {
+      final favSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('favorites')
+          .get();
+
+      // The document IDs in 'favorites' are the recipe IDs
+      final favoriteIds = favSnapshot.docs.map((doc) => doc.id).toSet();
+
+      setState(() {
+        userFavorites = favoriteIds;
+      });
+    } catch (e) {
+      print("Error loading user favorites: $e");
+    }
+  }
+
+  // Toggle a recipe's favorite status
+  Future<void> _toggleFavorite(String recipeId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return; // handle not logged in if needed
+
+    final favDocRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('favorites')
+        .doc(recipeId);
+
+    // If it’s already in favorites, remove it; otherwise add it
+    if (userFavorites.contains(recipeId)) {
+      await favDocRef.delete();
+      setState(() {
+        userFavorites.remove(recipeId);
+      });
+    } else {
+      await favDocRef.set({
+        'addedAt': FieldValue.serverTimestamp(),
+        // Optionally store more fields, e.g. recipe title or image
+      });
+      setState(() {
+        userFavorites.add(recipeId);
+      });
+    }
   }
 
   @override
@@ -371,6 +427,8 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
                 itemCount: categoryList.length,
                 itemBuilder: (context, index) {
                   final recipe = categoryList[index];
+                  final recipeId = (recipe["RecipeId"] ?? "").toString();
+                  bool isFavorited = userFavorites.contains(recipeId);
                   // Optionally remove right margin for the last item
                   final isLast = (index == categoryList.length - 1);
                   return Container(
@@ -381,6 +439,17 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
                       totalTime: recipe["TotalTime"] ?? "N/A",
                       imageUrl: recipe["Images"] ?? "",
                       recipeId: (recipe["RecipeId"] ?? "").toString(),
+                      isFavorited: isFavorited,
+                      onFavoriteTap: () => _toggleFavorite(recipeId),
+                      onCardTap: () async {
+                        await Navigator.pushNamed(
+                          context,
+                          '/recipeDetail',
+                          arguments: recipeId,
+                        );
+                        // When coming back, reload the favorites.
+                        _loadUserFavorites();
+                      },
                     ),
                   );
                 },
@@ -459,11 +528,25 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
                 ),
                 itemBuilder: (context, index) {
                   final recipe = filteredRecipes[index];
+                  bool isFavorited = userFavorites.contains(recipe["RecipeId"]);
                   return RecipeCard(
                     title: recipe["Name"],
                     totalTime: recipe["TotalTime"],
                     imageUrl: recipe["Images"],
                     recipeId: recipe["RecipeId"],
+                    isFavorited: isFavorited,
+                    onFavoriteTap: () => _toggleFavorite(
+                      recipe["RecipeId"],
+                    ),
+                    onCardTap: () async {
+                      await Navigator.pushNamed(
+                        context,
+                        '/recipeDetail',
+                        arguments: recipe["RecipeId"],
+                      );
+                      // When coming back, reload the favorites.
+                      _loadUserFavorites();
+                    },
                   );
                 },
               ),
