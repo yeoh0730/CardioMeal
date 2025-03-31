@@ -229,9 +229,22 @@ class _DashboardPageState extends State<DashboardPage> {
                   lineBarsData: [
                     LineChartBarData(
                       isCurved: true,
-                      color: Colors.blue,
-                      barWidth: 3,
+                      color: Colors.red,
+                      barWidth: 2,
                       spots: healthData[metricKey]!,
+
+                      // --- Shading below the line ---
+                      belowBarData: BarAreaData(
+                        show: true,
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.red.withOpacity(0.3), // start color (more opaque)
+                            Colors.red.withOpacity(0.005),           // end color (fully transparent)
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -322,20 +335,26 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: const Text(
-          'Dashboard',
-          style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold, color: Colors.black),
-        ),
-        centerTitle: true,
-      ),
+      backgroundColor: Color(0xFFF8F8F8),
+      // appBar: AppBar(
+      //   automaticallyImplyLeading: false,
+      //   elevation: 0,
+      //   scrolledUnderElevation: 0,
+      //   backgroundColor: Color(0xFFF8F8F8),
+      //   title: const Text(
+      //     'Dashboard',
+      //     style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold, color: Colors.black),
+      //   ),
+      //   // centerTitle: true,
+      // ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.only(
+            left: 16.0,
+            top: 16.0,
+            right: 16.0,
+            bottom: 0,
+          ),
           child: SingleChildScrollView(
             child: _isChartLoading
             // If loading, show a spinner or placeholder

@@ -19,34 +19,35 @@ class RecipeCard extends StatelessWidget {
       onTap: () {
         Navigator.pushNamed(
           context,
-          '/recipeDetail', // ✅ Navigate to the recipe details page
-          arguments: recipeId, // ✅ Pass recipeId
+          '/recipeDetail',
+          arguments: recipeId,
         );
       },
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withAlpha((0.2 * 255).toInt()),
-              spreadRadius: 2,
-              blurRadius: 8,
-              offset: const Offset(0, 3),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 1) Container that holds only the image (with a slight shadow)
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.2),
+                  spreadRadius: 2,
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ✅ Recipe Image with Bookmark Icon
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: Image.network(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Stack(
+                children: [
+                  // The recipe image
+                  Image.network(
                     imageUrl,
-                    height: 140,
+                    height: 180,
                     width: double.infinity,
                     fit: BoxFit.cover,
                     loadingBuilder: (context, child, loadingProgress) {
@@ -67,63 +68,60 @@ class RecipeCard extends StatelessWidget {
                       );
                     },
                   ),
-                ),
-                // ✅ Bookmark Icon
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withAlpha((0.8 * 255).toInt()),
-                      shape: BoxShape.circle,
-                    ),
-                    padding: const EdgeInsets.all(6),
-                    child: const Icon(
-                      Icons.bookmark_border,
-                      color: Colors.black,
-                      size: 22,
-                    ),
-                  ),
-                ),
-              ],
-            ),
 
-            // ✅ Recipe Title & Cooking Time
-            Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  // ✅ Cooking Time Row
-                  Row(
-                    children: [
-                      const Icon(Icons.access_time, size: 16, color: Colors.green),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          totalTime,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 13, color: Colors.black54),
-                        ),
+                  // Bookmark (or favorite) icon on top-right
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.8),
+                        shape: BoxShape.circle,
                       ),
-                    ],
+                      padding: const EdgeInsets.all(6),
+                      child: const Icon(
+                        Icons.favorite_border,
+                        color: Colors.black,
+                        size: 22,
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+
+          const SizedBox(height: 8),
+
+          // 2) Title text (outside any box)
+          Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          const SizedBox(height: 6),
+
+          // 3) Cooking time row (also outside the box)
+          Row(
+            children: [
+              const Icon(Icons.access_time, size: 16, color: Colors.green),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  totalTime,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13, color: Colors.black54),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

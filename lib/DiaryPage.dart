@@ -85,6 +85,20 @@ class _DiaryPageState extends State<DiaryPage> {
       initialDate: _selectedDate,
       firstDate: DateTime(2022),
       lastDate: DateTime(2030),
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          // Start with your existing theme or a base theme:
+          data: ThemeData.light().copyWith(
+            // Customize the color scheme:
+            colorScheme: const ColorScheme.light(
+              primary: Colors.red,   // header background color (month selector, etc.)
+              onPrimary: Colors.white, // header text color
+              onSurface: Colors.black, // body text color
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
 
     if (pickedDate != null && pickedDate != _selectedDate) {
@@ -131,7 +145,7 @@ class _DiaryPageState extends State<DiaryPage> {
 
   /// Example daily goal placeholders
   final double dailyGoal = 1618; // In a real app, fetch from user profile
-  final double consumed = 0;     // Placeholder
+  final double consumed = 1000;     // Placeholder
   double get left => (dailyGoal - consumed).clamp(0, dailyGoal);
 
   /// Build top "Daily Goal" portion with a larger ring + macros
@@ -143,6 +157,10 @@ class _DiaryPageState extends State<DiaryPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.grey.shade300, // Outline color (you can adjust opacity or use withOpacity)
+          width: 2,                    // Outline thickness
+        ),
         boxShadow: [
           // Slight shadow to make it pop
           BoxShadow(
@@ -161,11 +179,11 @@ class _DiaryPageState extends State<DiaryPage> {
           // We can use a CircularPercentIndicator or our own approach
           // Here, let's use the percent_indicator package for a nice ring
           CircularPercentIndicator(
-            radius: 60, // bigger radius
+            radius: 75, // bigger radius
             lineWidth: 12, // thicker ring
             percent: (consumed / dailyGoal).clamp(0, 1),
             backgroundColor: Colors.grey[200]!,
-            progressColor: Colors.green,
+            progressColor: Colors.red,
             center: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -178,7 +196,7 @@ class _DiaryPageState extends State<DiaryPage> {
             ),
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: 15),
 
           // Macros row: Carbs, Sodium, Fat
           Row(
@@ -186,35 +204,74 @@ class _DiaryPageState extends State<DiaryPage> {
             children: [
               // Carbs
               Column(
-                children: const [
-                  Text(
+                children: [
+                  const Text(
                     "Carbs",
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(height: 4),
-                  Text("0/192g", style: TextStyle(fontSize: 14)),
+                  const SizedBox(height: 4),
+                  SizedBox(
+                    width: 60,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(6), // adjust for desired roundness
+                      child: LinearProgressIndicator(
+                        value: 0.5, // dummy progress value
+                        backgroundColor: Colors.grey[300],
+                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.orange),
+                        minHeight: 6,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text("100/192g", style: TextStyle(fontSize: 14)),
                 ],
               ),
               // Sodium
               Column(
-                children: const [
-                  Text(
+                children: [
+                  const Text(
                     "Sodium",
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(height: 4),
-                  Text("0/99g", style: TextStyle(fontSize: 14)),
+                  const SizedBox(height: 4),
+                  SizedBox(
+                    width: 60,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(6), // adjust for desired roundness
+                      child: LinearProgressIndicator(
+                        value: 0.5, // dummy progress value
+                        backgroundColor: Colors.grey[300],
+                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
+                        minHeight: 6,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text("50/99g", style: TextStyle(fontSize: 14)),
                 ],
               ),
               // Fat
               Column(
-                children: const [
-                  Text(
+                children: [
+                  const Text(
                     "Fat",
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(height: 4),
-                  Text("0/45g", style: TextStyle(fontSize: 14)),
+                  const SizedBox(height: 4),
+                  SizedBox(
+                    width: 60,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(6), // adjust for desired roundness
+                      child: LinearProgressIndicator(
+                        value: 0.5, // dummy progress value
+                        backgroundColor: Colors.grey[300],
+                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.purple),
+                        minHeight: 6,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text("40/45g", style: TextStyle(fontSize: 14)),
                 ],
               ),
             ],
@@ -231,16 +288,13 @@ class _DiaryPageState extends State<DiaryPage> {
 
     return ListView(
       children: [
-        // 1) Top daily goal card
-        _buildDailyGoalSection(),
-
-        // 2) The date row
+        // The date row
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               isToday ? "Today" : DateFormat('yyyy-MM-dd').format(_selectedDate),
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             IconButton(
               icon: const Icon(Icons.calendar_today, color: Colors.black),
@@ -248,18 +302,28 @@ class _DiaryPageState extends State<DiaryPage> {
             ),
           ],
         ),
+
         const SizedBox(height: 8),
 
-        // 3) The meal sections
+        // Top daily goal card
+        _buildDailyGoalSection(),
+
+        const SizedBox(height: 8),
+
+        Text(
+          "Meals",
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+
+        // The meal sections
         _buildMealSection('Breakfast', Colors.red),
         _buildMealSection('Lunch', Colors.orange),
-        _buildMealSection('Dinner', Colors.indigo),
-        _buildMealSection('Snacks', Colors.deepPurple),
+        _buildMealSection('Dinner', Colors.blue),
+        _buildMealSection('Snacks', Colors.purple),
       ],
     );
   }
 
-  /// Build each meal section card
   Widget _buildMealSection(String mealTitle, Color color) {
     final mealNutrition = _calculateMealNutrition(mealTitle);
 
@@ -271,109 +335,106 @@ class _DiaryPageState extends State<DiaryPage> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        child: IntrinsicHeight(
-          child: Row(
+        // Optional: extra padding to add space inside the card
+        child: Padding(
+          padding: const EdgeInsets.only(top: 10.0, bottom: 10.0),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Left color strip
-              Container(
-                width: 8,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    bottomLeft: Radius.circular(16),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Title row + add button
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              mealTitle,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.add_circle, color: Colors.red),
-                            onPressed: () => _navigateToRecipeSelection(mealTitle),
-                          ),
-                        ],
+              // Top row: icon, meal title, bigger "Add" button
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8.0),
                       ),
-                      const SizedBox(height: 8),
-                      // Nutrition summary
-                      Text(
-                        "Total: ${mealNutrition["Calories"]} kcal | "
-                            "Sodium: ${mealNutrition["Sodium"]} mg | "
-                            "Fat: ${mealNutrition["Fat"]} g | "
-                            "Carbs: ${mealNutrition["Carbohydrates"]} g",
+                      padding: const EdgeInsets.all(8.0),
+                      child: Icon(
+                        _getMealIcon(mealTitle),
+                        color: color,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        mealTitle,
                         style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
                         ),
                       ),
-                      if (_selectedMeals[mealTitle]!.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        const Divider(),
-                      ],
-                      // Foods list
-                      Column(
-                        children: _selectedMeals[mealTitle]!.map((recipe) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4.0),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        recipe["name"],
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w400,
-                                          color: Colors.black,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        "Calories: ${recipe["calories"]} kcal | "
-                                            "Sodium: ${recipe["sodium"]} mg | "
-                                            "Fat: ${recipe["fat"]} g | "
-                                            "Carbs: ${recipe["carbs"]} g",
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          color: Colors.black54,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
-                                  onPressed: () => _deleteFood(mealTitle, recipe),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ],
+                    ),
+                    IconButton(
+                      iconSize: 30, // Make the "Add" icon bigger
+                      icon: const Icon(Icons.add_circle, color: Colors.red),
+                      onPressed: () => _navigateToRecipeSelection(mealTitle),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Divider if there are foods logged
+              if (_selectedMeals[mealTitle]!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Divider(
+                    height: 1,
+                    thickness: 1,
+                    indent: 16,
+                    endIndent: 16,
                   ),
                 ),
+
+              // Foods list
+              Column(
+                children: _selectedMeals[mealTitle]!.map((recipe) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 16.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Food info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                recipe["name"] ?? "No Name",
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                "Calories: ${recipe["calories"]} | "
+                                    "Sodium: ${recipe["sodium"]} | "
+                                    "Fat: ${recipe["fat"]} | "
+                                    "Carbs: ${recipe["carbs"]} ",
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Delete button (aligned to the right)
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.redAccent),
+                          onPressed: () => _deleteFood(mealTitle, recipe),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
               ),
             ],
           ),
@@ -382,25 +443,52 @@ class _DiaryPageState extends State<DiaryPage> {
     );
   }
 
+  /// Returns an appropriate icon for each meal type.
+  IconData _getMealIcon(String mealTitle) {
+    switch (mealTitle.toLowerCase()) {
+      case 'breakfast':
+        return Icons.breakfast_dining; // coffee cup icon
+      case 'lunch':
+        return Icons.lunch_dining; // lunch icon
+      case 'dinner':
+        return Icons.dinner_dining; // dinner icon
+      case 'snacks':
+        return Icons.cookie; // fast food icon
+      default:
+        return Icons.restaurant; // default meal icon
+    }
+  }
+
+
   /// Main build
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: const Text(
-          'Diary',
-          style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold, color: Colors.black),
-        ),
-        centerTitle: true,
-      ),
+      backgroundColor: Color(0xFFF8F8F8),
+      // appBar: AppBar(
+      //   automaticallyImplyLeading: false,
+      //   elevation: 0,
+      //   scrolledUnderElevation: 0,
+      //   backgroundColor: Color(0xFFF8F8F8),
+      //   title: const Text(
+      //     'Diary',
+      //     style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold, color: Colors.black),
+      //   ),
+      //   // centerTitle: true,
+      // ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.only(
+          left: 16.0,
+          top: 16.0,
+          right: 16.0,
+          bottom: 0,
+        ),
         child: _buildDiaryList(),
       ),
     );
   }
 }
+
+
+
+

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'models/custom_button.dart';
 import 'services/api_service.dart';
 import 'models/recipe_card.dart';
 
@@ -167,36 +168,71 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
+              backgroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
-              title: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text("Filter by Meal Type"),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.black),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
+              // Override default padding so there's less space around content
+              contentPadding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: 0,
               ),
+              actionsPadding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                bottom: 8,
+              ),
+              // No default title property; we place the "Filter by Meal Type" + X button in content
               content: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: mealTypes.map((mealType) {
-                  return CheckboxListTile(
-                    title: Text(mealType),
-                    value: selectedFilters.contains(mealType),
-                    onChanged: (bool? value) {
-                      setDialogState(() {
-                        if (value == true) {
-                          selectedFilters.add(mealType);
-                        } else {
-                          selectedFilters.remove(mealType);
-                        }
-                      });
-                    },
-                  );
-                }).toList(),
+                children: [
+                  // Top row: Title + round X button
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Filter by Meal Type",
+                        style: TextStyle(fontSize: 20),
+                      ),
+                      // Round X button
+                      Container(
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.black12, // or any color you want for the background
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.close, color: Colors.black),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // The list of checkboxes
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: mealTypes.map((mealType) {
+                      return CheckboxListTile(
+                        contentPadding: EdgeInsets.zero, // reduce horizontal space
+                        title: Text(mealType),
+                        value: selectedFilters.contains(mealType),
+                        onChanged: (bool? value) {
+                          setDialogState(() {
+                            if (value == true) {
+                              selectedFilters.add(mealType);
+                            } else {
+                              selectedFilters.remove(mealType);
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ],
               ),
               actions: [
                 TextButton(
@@ -207,14 +243,17 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
                     });
                     Navigator.pop(context);
                   },
-                  child: const Text("Reset"),
+                  child: const Text(
+                    "Reset",
+                    style: TextStyle(color: Colors.red),
+                  ),
                 ),
-                ElevatedButton(
+                CustomButton(
+                  text: "Apply",
                   onPressed: () {
                     _applyFilter();
                     Navigator.pop(context);
                   },
-                  child: const Text("Apply"),
                 ),
               ],
             );
@@ -223,6 +262,7 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
       },
     );
   }
+
 
   void _applyFilter() {
     if (selectedFilters.isEmpty) {
@@ -249,22 +289,32 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
     return DefaultTabController(
       length: 2, // "Recommended" & "All Recipes"
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: Color(0xFFF8F8F8),
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(48), // or your custom height
           child: AppBar(
-            backgroundColor: Colors.white,
+            backgroundColor: Color(0xFFF8F8F8),
             elevation: 0,
+            scrolledUnderElevation: 0,
             titleSpacing: 0,
             bottom: TabBar(
               tabs: [
                 Tab(text: "Recommended"),
                 Tab(text: "All Recipes"),
               ],
-              // Optionally customize tab style, e.g.:
-              // labelColor: Colors.purple,
+              labelColor: Colors.red,
               // unselectedLabelColor: Colors.grey,
-              // indicatorColor: Colors.purple,
+              indicatorColor: Colors.red,
+              // Here is the overlayColor property that changes the pressed/ripple color:
+              overlayColor: WidgetStateProperty.resolveWith<Color?>(
+                    (Set<WidgetState> states) {
+                  if (states.contains(WidgetState.pressed)) {
+                    // Return your custom pressed color here:
+                    return Colors.grey[100];
+                  }
+                  return null; // default ripple color if not pressed
+                },
+              ),
             ),
           ),
         ),
@@ -315,7 +365,7 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
 
             // Single horizontal row
             SizedBox(
-              height: 230,
+              height: 260,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: categoryList.length,
@@ -387,7 +437,7 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
               const SizedBox(width: 8),
               // Filter button
               IconButton(
-                icon: const Icon(Icons.filter_alt_rounded, color: Colors.black),
+                icon: const Icon(Icons.filter_alt_rounded, color: Colors.red),
                 onPressed: _openFilterDialog,
               ),
             ],
@@ -399,11 +449,11 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
           child: Stack(
             children: [
               GridView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                 itemCount: filteredRecipes.length,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  childAspectRatio: 3 / 4,
+                  childAspectRatio: 0.7,
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
                 ),

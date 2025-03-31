@@ -98,7 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Color(0xFFF8F8F8),
       body: SafeArea(
         child: _pages[_currentIndex], // Display the selected page
       ),
