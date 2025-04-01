@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'models/custom_button.dart';
+
 class SelectRecipesPage extends StatefulWidget {
   final String mealType; // Meal type (Breakfast, Lunch, etc.)
   final DateTime selectedDate; // Selected date
@@ -124,37 +126,44 @@ class _SelectRecipesPageState extends State<SelectRecipesPage> {
       backgroundColor: Colors.white,
       appBar: AppBar(
           backgroundColor: Colors.white,
-          title: const Text("Log Meals")
+          title: const Text("Log Meals"),
+          scrolledUnderElevation: 0,
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: const InputDecoration(labelText: "Search Recipes"),
-              onChanged: _filterRecipes,
+      body: Padding(
+        padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 0, bottom: 16.0),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: TextField(
+                controller: _searchController,
+                decoration: const InputDecoration(labelText: "Search Recipes"),
+                onChanged: _filterRecipes,
+              ),
             ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _filteredRecipes.length,
-              itemBuilder: (context, index) {
-                final recipe = _filteredRecipes[index];
-                return CheckboxListTile(
-                  title: Text(recipe["Name"]),
-                  value: _selectedRecipes.contains(recipe),
-                  onChanged: (bool? selected) => _toggleSelection(recipe),
-                );
-              },
+            Expanded(
+              child: ListView.builder(
+                itemCount: _filteredRecipes.length,
+                itemBuilder: (context, index) {
+                  final recipe = _filteredRecipes[index];
+                  return CheckboxListTile(
+                    title: Text(recipe["Name"]),
+                    value: _selectedRecipes.contains(recipe),
+                    onChanged: (bool? selected) => _toggleSelection(recipe),
+                  );
+                },
+              ),
             ),
-          ),
-          ElevatedButton(
-            onPressed: _confirmSelection,
-            child: const Text("Log Selected Recipes"),
-          ),
-        ],
-      ),
+            SizedBox(
+              width: double.infinity,
+              child: CustomButton(
+                text: "Log Meals",
+                onPressed: _confirmSelection,
+              ),
+            ),
+          ],
+        ),
+      )
     );
   }
 }

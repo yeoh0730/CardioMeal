@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'models/custom_button.dart';
+
 class EditProfilePage extends StatefulWidget {
   final Map<String, dynamic>? userData;
   const EditProfilePage({required this.userData});
@@ -102,10 +104,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   _buildActivityRadio("Very Active", "Very intense daily exercise or physical job."),
 
                   const SizedBox(height: 20),
-                  Center(
-                    child: ElevatedButton(
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: CustomButton(
+                      text: "Save Changes",
                       onPressed: _saveChanges,
-                      child: const Text("Save Changes"),
                     ),
                   ),
                 ],
@@ -126,6 +130,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           Radio<String>(
             value: title,
             groupValue: _selectedActivityLevel, // ✅ This should now properly reflect Firestore data
+            activeColor: Colors.red,
             onChanged: (String? value) {
               setState(() {
                 _selectedActivityLevel = value;

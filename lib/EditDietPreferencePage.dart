@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'models/custom_button.dart';
+
 class EditDietPreferencePage extends StatefulWidget {
   final Map<String, dynamic>? userData;
   const EditDietPreferencePage({required this.userData});
@@ -15,11 +17,11 @@ class _EditDietPreferencePageState extends State<EditDietPreferencePage> {
 
   final List<String> _dietaryOptions = [
     "None",
-    "Alcohol-Free",
+    // "Alcohol-Free",
     "Dairy-Free",
     "Gluten-Free",
-    "Halal",
-    "Keto",
+    // "Halal",
+    // "Keto",
     "High-Fiber",
     "High-Protein",
     "Low-Calorie",
@@ -28,21 +30,21 @@ class _EditDietPreferencePageState extends State<EditDietPreferencePage> {
     "Low-Sugar",
     "Vegan",
     "Vegetarian",
-    "Asian",
-    "European",
-    "Filipino",
-    "French",
-    "Fusion",
-    "German",
-    "Hawaiian",
-    "Indian",
-    "Italian",
-    "Japanese",
-    "Korean",
-    "Mexican",
-    "Taiwanese",
-    "Thai",
-    "Vietnamese"
+    // "Asian",
+    // "European",
+    // // "Filipino",
+    // // "French",
+    // "Fusion",
+    // // "German",
+    // // "Hawaiian",
+    // // "Indian",
+    // "Italian",
+    // // "Japanese",
+    // // "Korean",
+    // // "Mexican",
+    // // "Taiwanese",
+    // // "Thai",
+    // // "Vietnamese"
   ];
 
   @override
@@ -100,16 +102,19 @@ class _EditDietPreferencePageState extends State<EditDietPreferencePage> {
                     onChanged: (value) {
                       _toggleDietaryPreference(preference);
                     },
+                    activeColor: Colors.red,
                   )).toList(),
                 ),
               ),
             ),
 
             const SizedBox(height: 20),
-            Center(
-              child: ElevatedButton(
+
+            SizedBox(
+              width: double.infinity,
+              child: CustomButton(
+                text: "Save Changes",
                 onPressed: _saveDietPreferences,
-                child: const Text("Save Changes"),
               ),
             ),
           ],
