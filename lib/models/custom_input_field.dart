@@ -27,7 +27,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
       children: [
         Text(
           widget.labelText,
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 15),
         Focus(

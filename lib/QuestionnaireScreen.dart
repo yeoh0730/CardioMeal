@@ -30,6 +30,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   final TextEditingController _diastolicBPController = TextEditingController();
   final TextEditingController _bloodGlucoseController = TextEditingController();
   final TextEditingController _heartRateController = TextEditingController();
+  final TextEditingController _freePreferenceController = TextEditingController();
+
 
   // State
   String? _gender;
@@ -90,9 +92,13 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         _errorMessage = "Please enter your resting heart rate.";
         return;
       }
-      if (_currentPage == 6 && _selectedDietaryPreferences.isEmpty) {
-        _errorMessage = "Please select at least one dietary preference.";
-        return;
+      if (_currentPage == 6) {
+        // Either the user must have at least one checkbox selected,
+        // OR they must have typed something in the free-form field.
+        if (_selectedDietaryPreferences.isEmpty && _freePreferenceController.text.trim().isEmpty) {
+          _errorMessage = "Please enter or select at least one dietary preference.";
+          return;
+        }
       }
 
       // Move to next or finish
@@ -138,6 +144,15 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       });
       return;
     }
+
+      // If the user typed a free-form preference, add it to the list
+      final customPref = _freePreferenceController.text.trim();
+      if (customPref.isNotEmpty) {
+        _selectedDietaryPreferences.add(customPref);
+      }
+
+      // (Optionally remove duplicates)
+      _selectedDietaryPreferences = _selectedDietaryPreferences.toSet().toList();
 
       FirebaseFirestore firestore = FirebaseFirestore.instance;
 
@@ -334,7 +349,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         children: [
           const Text(
             "What is your gender?",
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),
           DropdownButtonFormField<String>(
@@ -407,7 +422,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         children: [
           const Text(
             "What is your level of activity?",
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),
           _buildActivityOption("Sedentary", "Little or no exercise, mostly sitting."),
@@ -464,18 +479,49 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             "Do you have any dietary preference(s)?",
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
+          // Free-form preference input
           const SizedBox(height: 20),
+
+          const Text(
+            "Describe in your own words:",
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+          ),
+
+          const SizedBox(height: 8),
+
+          TextField(
+            controller: _freePreferenceController,
+            style: const TextStyle(fontSize: 16.0),
+            decoration: InputDecoration(
+              hintText: "e.g., I prefer dairy-free dishes or meals that contain salmon.",
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+            ),
+            maxLines: null, // Allow multiline if needed
+          ),
+
+          const SizedBox(height: 20),
+
+          const Text(
+            "Or select from the list below:",
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+          ),
+
+          const SizedBox(height: 8),
+
           _buildCheckbox("None"),
-          _buildCheckbox("Alcohol-Free"),
+          // _buildCheckbox("Alcohol-Free"),
           _buildCheckbox("Dairy-Free"),
           _buildCheckbox("Gluten-Free"),
-          _buildCheckbox("Halal"),
-          _buildCheckbox("Keto"),
+          // _buildCheckbox("Halal"),
+          // _buildCheckbox("Keto"),
           _buildCheckbox("High-Fiber"),
           _buildCheckbox("High-Protein"),
           _buildCheckbox("Low-Calorie"),
@@ -484,21 +530,21 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           _buildCheckbox("Low-Sugar"),
           _buildCheckbox("Vegan"),
           _buildCheckbox("Vegetarian"),
-          _buildCheckbox("Asian"),
-          _buildCheckbox("European"),
-          _buildCheckbox("Filipino"),
-          _buildCheckbox("French"),
-          _buildCheckbox("Fusion"),
-          _buildCheckbox("German"),
-          _buildCheckbox("Hawaiian"),
-          _buildCheckbox("Indian"),
-          _buildCheckbox("Italian"),
-          _buildCheckbox("Japanese"),
-          _buildCheckbox("Korean"),
-          _buildCheckbox("Mexican"),
-          _buildCheckbox("Taiwanese"),
-          _buildCheckbox("Thai"),
-          _buildCheckbox("Vietnamese"),
+          // _buildCheckbox("Asian"),
+          // _buildCheckbox("European"),
+          // _buildCheckbox("Filipino"),
+          // _buildCheckbox("French"),
+          // _buildCheckbox("Fusion"),
+          // _buildCheckbox("German"),
+          // _buildCheckbox("Hawaiian"),
+          // _buildCheckbox("Indian"),
+          // _buildCheckbox("Italian"),
+          // _buildCheckbox("Japanese"),
+          // _buildCheckbox("Korean"),
+          // _buildCheckbox("Mexican"),
+          // _buildCheckbox("Taiwanese"),
+          // _buildCheckbox("Thai"),
+          // _buildCheckbox("Vietnamese"),
         ],
       ),
     );
