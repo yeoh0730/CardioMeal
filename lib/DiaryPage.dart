@@ -11,6 +11,8 @@ class DiaryPage extends StatefulWidget {
 }
 
 class _DiaryPageState extends State<DiaryPage> {
+  bool _isNutrientLimitsLoading = true;
+
   DateTime _selectedDate = DateTime.now();
   Map<String, List<Map<String, dynamic>>> _selectedMeals = {
     "Breakfast": [],
@@ -19,10 +21,82 @@ class _DiaryPageState extends State<DiaryPage> {
     "Snacks": []
   };
 
+  /// We'll store the user’s daily calorie goal and nutrient limits here.
+  double? _userCalories;   // e.g. dailyCalories
+  double? _userSodiumLimit;
+  double? _userFatLimit;
+  double? _userCarbLimit;
+
+  /// Track how much the user has consumed so far.
+  /// In a more complete implementation, you'd sum the macros from all meals.
+  double _consumedCalories = 0;
+  double _consumedCarbs = 0;
+  double _consumedSodium = 0;
+  double _consumedFat = 0;
+
   @override
   void initState() {
     super.initState();
+    _fetchUserNutrientLimitsForDate();
     _fetchLoggedMeals();
+  }
+
+  Future<void> _fetchUserNutrientLimitsForDate() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    // For the selected date, define the end-of-day timestamp.
+    DateTime endOfDay = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      23,
+      59,
+      59,
+    );
+    Timestamp endTS = Timestamp.fromDate(endOfDay);
+
+    // Query all nutrientHistory docs with a timestamp less than or equal to the end-of-day.
+    QuerySnapshot snapshot = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(user.uid)
+        .collection("nutrientHistory")
+        .where("timestamp", isLessThanOrEqualTo: endTS)
+        .orderBy("timestamp", descending: true)
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isNotEmpty) {
+      Map<String, dynamic> nutrientData =
+      snapshot.docs.first.data() as Map<String, dynamic>;
+      setState(() {
+        _userCalories = nutrientData['dailyCalories'] != null
+            ? (nutrientData['dailyCalories'] as num).toDouble()
+            : 0;
+        _userSodiumLimit = nutrientData['sodiumLimit'] != null
+            ? (nutrientData['sodiumLimit'] as num).toDouble()
+            : 0;
+        _userFatLimit = nutrientData['fatLimit'] != null
+            ? (nutrientData['fatLimit'] as num).toDouble()
+            : 0;
+        _userCarbLimit = nutrientData['carbLimit'] != null
+            ? (nutrientData['carbLimit'] as num).toDouble()
+            : 0;
+        _isNutrientLimitsLoading = false; // Data is loaded!
+      });
+      print("Fetched nutrient limits for date $_selectedDate (endOfDay: $endOfDay):");
+      print("Calories: $_userCalories, Sodium: $_userSodiumLimit, Fat: $_userFatLimit, Carbs: $_userCarbLimit");
+    } else {
+      // No document found for a timestamp <= the selected date's end. Clear or set default values.
+      setState(() {
+        _userCalories = 0;
+        _userSodiumLimit = 0;
+        _userFatLimit = 0;
+        _userCarbLimit = 0;
+        _isNutrientLimitsLoading = false; // Data fetching completed (even if empty)
+      });
+      print("No nutrient history found for date $_selectedDate");
+    }
   }
 
   Future<void> _fetchLoggedMeals() async {
@@ -54,6 +128,33 @@ class _DiaryPageState extends State<DiaryPage> {
 
     setState(() {
       _selectedMeals = newMeals;
+    });
+
+    // After we've updated _selectedMeals, recalculate the "consumed" macros.
+    _recalculateConsumedTotals();
+  }
+
+  /// Recompute how many calories, carbs, sodium, and fat the user has consumed so far.
+  void _recalculateConsumedTotals() {
+    double totalCals = 0;
+    double totalCarbs = 0;
+    double totalSodium = 0;
+    double totalFat = 0;
+
+    _selectedMeals.forEach((mealType, mealList) {
+      for (var recipe in mealList) {
+        totalCals += recipe["calories"] ?? 0;
+        totalCarbs += recipe["carbs"] ?? 0;
+        totalSodium += recipe["sodium"] ?? 0;
+        totalFat += recipe["fat"] ?? 0;
+      }
+    });
+
+    setState(() {
+      _consumedCalories = totalCals;
+      _consumedCarbs = totalCarbs;
+      _consumedSodium = totalSodium;
+      _consumedFat = totalFat;
     });
   }
 
@@ -87,13 +188,11 @@ class _DiaryPageState extends State<DiaryPage> {
       lastDate: DateTime(2030),
       builder: (BuildContext context, Widget? child) {
         return Theme(
-          // Start with your existing theme or a base theme:
           data: ThemeData.light().copyWith(
-            // Customize the color scheme:
             colorScheme: const ColorScheme.light(
-              primary: Colors.red,   // header background color (month selector, etc.)
-              onPrimary: Colors.white, // header text color
-              onSurface: Colors.black, // body text color
+              primary: Colors.red,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
             ),
           ),
           child: child!,
@@ -106,6 +205,7 @@ class _DiaryPageState extends State<DiaryPage> {
         _selectedDate = pickedDate;
       });
       _fetchLoggedMeals();
+      _fetchUserNutrientLimitsForDate();
     }
   }
 
@@ -143,14 +243,34 @@ class _DiaryPageState extends State<DiaryPage> {
     };
   }
 
-  /// Example daily goal placeholders
-  final double dailyGoal = 1618; // In a real app, fetch from user profile
-  final double consumed = 1000;     // Placeholder
+  /// If we have userCalories, show that as the daily goal.
+  /// Otherwise default to some placeholder or 0.
+  double get dailyGoal => _userCalories ?? 0;
+
+  double get consumed => _consumedCalories;
   double get left => (dailyGoal - consumed).clamp(0, dailyGoal);
 
-  /// Build top "Daily Goal" portion with a larger ring + macros
-  Widget _buildDailyGoalSection() {
-    // We'll wrap this entire design in a container with a shadow
+  // For macros, we do something similar:
+  double get userCarbLimit => _userCarbLimit ?? 0;
+  double get userSodiumLimit => _userSodiumLimit ?? 0;
+  double get userFatLimit => _userFatLimit ?? 0;
+
+
+  // Build top "Daily Goal" portion with ring + macros
+  Widget _buildDailyGoalSection() {  // If nutrient limits are still loading, show a spinner
+    // If we don't have user data yet, show placeholders
+    bool hasData = (dailyGoal > 0);
+
+    double carbProgress = 0;
+    double sodiumProgress = 0;
+    double fatProgress = 0;
+
+    if (hasData) {
+      carbProgress = (_consumedCarbs / userCarbLimit).clamp(0, 1);
+      sodiumProgress = (_consumedSodium / userSodiumLimit).clamp(0, 1);
+      fatProgress = (_consumedFat / userFatLimit).clamp(0, 1);
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -158,11 +278,10 @@ class _DiaryPageState extends State<DiaryPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.grey.shade300, // Outline color (you can adjust opacity or use withOpacity)
-          width: 2,                    // Outline thickness
+          color: Colors.grey.shade300,
+          width: 2,
         ),
         boxShadow: [
-          // Slight shadow to make it pop
           BoxShadow(
             color: Colors.grey.withOpacity(0.15),
             spreadRadius: 2,
@@ -174,13 +293,9 @@ class _DiaryPageState extends State<DiaryPage> {
       child: Column(
         children: [
           const SizedBox(height: 10),
-
-          // Larger circular indicator for "calories left"
-          // We can use a CircularPercentIndicator or our own approach
-          // Here, let's use the percent_indicator package for a nice ring
           CircularPercentIndicator(
-            radius: 75, // bigger radius
-            lineWidth: 12, // thicker ring
+            radius: 75,
+            lineWidth: 12,
             percent: (consumed / dailyGoal).clamp(0, 1),
             backgroundColor: Colors.grey[200]!,
             progressColor: Colors.red,
@@ -188,17 +303,16 @@ class _DiaryPageState extends State<DiaryPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  left.toStringAsFixed(0),
+                  hasData
+                      ? left.toStringAsFixed(0)
+                      : "0",
                   style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const Text("calories left", style: TextStyle(fontSize: 14)),
               ],
             ),
           ),
-
           const SizedBox(height: 15),
-
-          // Macros row: Carbs, Sodium, Fat
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -213,9 +327,9 @@ class _DiaryPageState extends State<DiaryPage> {
                   SizedBox(
                     width: 60,
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(6), // adjust for desired roundness
+                      borderRadius: BorderRadius.circular(6),
                       child: LinearProgressIndicator(
-                        value: 0.5, // dummy progress value
+                        value: carbProgress,
                         backgroundColor: Colors.grey[300],
                         valueColor: const AlwaysStoppedAnimation<Color>(Colors.orange),
                         minHeight: 6,
@@ -223,7 +337,12 @@ class _DiaryPageState extends State<DiaryPage> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text("100/192g", style: TextStyle(fontSize: 14)),
+                  Text(
+                    hasData
+                        ? "${_consumedCarbs.toStringAsFixed(0)}/${userCarbLimit.toStringAsFixed(0)}g"
+                        : "0/0g",
+                    style: const TextStyle(fontSize: 14),
+                  ),
                 ],
               ),
               // Sodium
@@ -237,9 +356,9 @@ class _DiaryPageState extends State<DiaryPage> {
                   SizedBox(
                     width: 60,
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(6), // adjust for desired roundness
+                      borderRadius: BorderRadius.circular(6),
                       child: LinearProgressIndicator(
-                        value: 0.5, // dummy progress value
+                        value: sodiumProgress,
                         backgroundColor: Colors.grey[300],
                         valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
                         minHeight: 6,
@@ -247,7 +366,12 @@ class _DiaryPageState extends State<DiaryPage> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text("50/99g", style: TextStyle(fontSize: 14)),
+                  Text(
+                    hasData
+                        ? "${_consumedSodium.toStringAsFixed(0)}/${userSodiumLimit.toStringAsFixed(0)}mg"
+                        : "0/0mg",
+                    style: const TextStyle(fontSize: 14),
+                  ),
                 ],
               ),
               // Fat
@@ -261,9 +385,9 @@ class _DiaryPageState extends State<DiaryPage> {
                   SizedBox(
                     width: 60,
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(6), // adjust for desired roundness
+                      borderRadius: BorderRadius.circular(6),
                       child: LinearProgressIndicator(
-                        value: 0.5, // dummy progress value
+                        value: fatProgress,
                         backgroundColor: Colors.grey[300],
                         valueColor: const AlwaysStoppedAnimation<Color>(Colors.purple),
                         minHeight: 6,
@@ -271,7 +395,12 @@ class _DiaryPageState extends State<DiaryPage> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text("40/45g", style: TextStyle(fontSize: 14)),
+                  Text(
+                    hasData
+                        ? "${_consumedFat.toStringAsFixed(0)}/${userFatLimit.toStringAsFixed(0)}g"
+                        : "0/0g",
+                    style: const TextStyle(fontSize: 14),
+                  ),
                 ],
               ),
             ],
@@ -463,6 +592,12 @@ class _DiaryPageState extends State<DiaryPage> {
   /// Main build
   @override
   Widget build(BuildContext context) {
+    if (_isNutrientLimitsLoading) {
+      return Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Color(0xFFF8F8F8),
       // appBar: AppBar(

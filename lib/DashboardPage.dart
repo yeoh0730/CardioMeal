@@ -4,6 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
+// Import your daily nutrient calculation service
+import 'services/daily_nutrient_calculation.dart';
+
 class DashboardPage extends StatefulWidget {
   @override
   _DashboardPageState createState() => _DashboardPageState();
@@ -137,13 +140,25 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  // ✅ Function to Save Health Metrics in Firestore
-  void _updateHealthMetrics(double cholesterol, double systolicBP, double diastolicBP, double bloodGlucose, double heartRate) async {
+  void _updateHealthMetrics(
+      double cholesterol,
+      double systolicBP,
+      double diastolicBP,
+      double bloodGlucose,
+      double heartRate,
+      ) async {
     User? user = _auth.currentUser;
     if (user == null) return;
 
     String timestamp = DateTime.now().toIso8601String();
-    await _firestore.collection("users").doc(user.uid).collection("healthMetrics").doc(timestamp).set({
+
+    // 1. Save to healthMetrics subcollection only.
+    await _firestore
+        .collection("users")
+        .doc(user.uid)
+        .collection("healthMetrics")
+        .doc(timestamp)
+        .set({
       "cholesterol": cholesterol,
       "systolicBP": systolicBP,
       "diastolicBP": diastolicBP,
@@ -152,6 +167,60 @@ class _DashboardPageState extends State<DashboardPage> {
       "timestamp": FieldValue.serverTimestamp(),
     });
 
+    // 2. Remove the code that updated the main user doc:
+    //    (We do NOT want to store these fields in the main doc)
+    // await _firestore.collection("users").doc(user.uid).update({...});
+
+    // 3. Fetch the main user doc for weight, height, age, etc.
+    DocumentSnapshot userDocSnap =
+    await _firestore.collection("users").doc(user.uid).get();
+    Map<String, dynamic>? userDocData =
+    userDocSnap.data() as Map<String, dynamic>?;
+
+    if (userDocData != null) {
+      // 4. Combine user doc data with new health metrics (in memory).
+      final combinedData = {
+        ...userDocData,
+        "cholesterol": cholesterol,
+        "systolicBP": systolicBP,
+        "diastolicBP": diastolicBP,
+        "bloodGlucose": bloodGlucose,
+        "heartRate": heartRate,
+      };
+
+      // 5. Recalculate new nutrient limits
+      Map<String, dynamic> newLimits =
+      await calculateNutrientLimitsWithoutStoring(combinedData);
+
+      // 6. Retrieve the latest nutrientHistory entry
+      QuerySnapshot lastNutrientSnap = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('nutrientHistory')
+          .orderBy('timestamp', descending: true)
+          .limit(1)
+          .get();
+
+      bool shouldUpdate = true;
+      if (lastNutrientSnap.docs.isNotEmpty) {
+        DocumentSnapshot lastDoc = lastNutrientSnap.docs.first;
+        Map<String, dynamic>? lastData =
+        lastDoc.data() as Map<String, dynamic>?;
+        if (lastData != null) {
+          // Compare new data with the last entry.
+          shouldUpdate = nutrientDataHasChanged(lastData, newLimits);
+        }
+      }
+
+      if (shouldUpdate) {
+        // 7. Store new nutrient limits & risk category
+        await storeNutrientLimits(user.uid, newLimits);
+      } else {
+        print("No changes in nutrient limits. Not storing a new document.");
+      }
+    }
+
+    // 8. Refresh the health history (to update the chart)
     _fetchHealthHistory();
   }
 
@@ -181,65 +250,62 @@ class _DashboardPageState extends State<DashboardPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(title,
+                style:
+                const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
             SizedBox(
-              height: 200, // slightly taller
+              height: 200,
               child: LineChart(
                 LineChartData(
                   backgroundColor: Colors.white,
-                  // Hide or show grid lines
                   gridData: FlGridData(show: false),
-                  // Hide the chart border
-                  borderData: FlBorderData(show: true, border: Border.all(color: Colors.white)),
-                  // Configure axis titles
+                  borderData: FlBorderData(
+                      show: true, border: Border.all(color: Colors.white)),
                   titlesData: FlTitlesData(
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
-                        reservedSize: 40, // space for the text
+                        reservedSize: 40,
                         getTitlesWidget: (value, meta) {
-                          // Round or cast to int if you want only integer labels
                           return Text(value.toInt().toString(),
                               style: const TextStyle(fontSize: 10));
                         },
                       ),
                     ),
-                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    rightTitles:
+                    AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles:
+                    AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
-                        interval: 1, // ensure a label for each point
+                        interval: 1,
                         getTitlesWidget: (value, meta) {
                           int index = value.toInt();
-                          // If index is out of range, return empty
                           if (index < 0 || index >= metricDates.length) {
                             return const SizedBox.shrink();
                           }
-                          // Format the date
                           DateTime date = metricDates[index];
                           String formatted = DateFormat('MM/dd').format(date);
-                          return Text(formatted, style: const TextStyle(fontSize: 10));
+                          return Text(formatted,
+                              style: const TextStyle(fontSize: 10));
                         },
                       ),
                     ),
                   ),
-                  // Pass the spots for the given metric
                   lineBarsData: [
                     LineChartBarData(
                       isCurved: true,
                       color: Colors.red,
                       barWidth: 2,
                       spots: healthData[metricKey]!,
-
-                      // --- Shading below the line ---
                       belowBarData: BarAreaData(
                         show: true,
                         gradient: LinearGradient(
                           colors: [
-                            Colors.red.withOpacity(0.3), // start color (more opaque)
-                            Colors.red.withOpacity(0.005),           // end color (fully transparent)
+                            Colors.red.withOpacity(0.3),
+                            Colors.red.withOpacity(0.005),
                           ],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
@@ -267,22 +333,18 @@ class _DashboardPageState extends State<DashboardPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+            Text(title,
+                style:
+                const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
-
             Row(
               children: [
                 Image.asset(
-                  'assets/logo.png', // Ensure this asset exists
+                  'assets/logo.png',
                   width: 50,
                   height: 50,
                 ),
                 const SizedBox(width: 10),
-
-                // ✅ Circular Progress Indicators
                 Expanded(
                   child: Wrap(
                     spacing: 20,
@@ -302,7 +364,7 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-// ✅ Circular Progress Bar for Nutrients
+  // ✅ Circular Progress Bar for Nutrients
   Widget _buildCircularProgress(double value, String label) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -321,13 +383,15 @@ class _DashboardPageState extends State<DashboardPage> {
                 strokeWidth: 6,
               ),
               Center(
-                child: Text("${(value * 100).toInt()}%", style: const TextStyle(fontSize: 12)),
+                child: Text("${(value * 100).toInt()}%",
+                    style: const TextStyle(fontSize: 12)),
               ),
             ],
           ),
         ),
         const SizedBox(height: 5),
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+        Text(label,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
       ],
     );
   }
@@ -336,17 +400,6 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFFF8F8F8),
-      // appBar: AppBar(
-      //   automaticallyImplyLeading: false,
-      //   elevation: 0,
-      //   scrolledUnderElevation: 0,
-      //   backgroundColor: Color(0xFFF8F8F8),
-      //   title: const Text(
-      //     'Dashboard',
-      //     style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold, color: Colors.black),
-      //   ),
-      //   // centerTitle: true,
-      // ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.only(
@@ -357,14 +410,12 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           child: SingleChildScrollView(
             child: _isChartLoading
-            // If loading, show a spinner or placeholder
                 ? Center(
               child: Padding(
                 padding: const EdgeInsets.only(top: 50.0),
                 child: CircularProgressIndicator(),
               ),
             )
-            // If not loading, show your entire UI with charts
                 : Column(
               children: [
                 _buildProgressCard("Today's Progress"),
@@ -374,8 +425,10 @@ class _DashboardPageState extends State<DashboardPage> {
                 ElevatedButton(
                   onPressed: _showUpdateDialog,
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red, foregroundColor: Colors.white),
-                  child: const Text("Update health metrics", style: TextStyle(fontSize: 12)),
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white),
+                  child: const Text("Update health metrics",
+                      style: TextStyle(fontSize: 12)),
                 ),
                 _buildMetricGraph("Cholesterol Level", "Cholesterol"),
                 const SizedBox(height: 16),

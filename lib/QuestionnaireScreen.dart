@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'main.dart';
 import 'models/custom_button.dart';
 import 'models/custom_input_field.dart';
+// Import your profile service where the calculation function is defined.
+import 'services/daily_nutrient_calculation.dart';
 
 class QuestionnaireScreen extends StatefulWidget {
   final String email;
@@ -32,7 +34,6 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   final TextEditingController _heartRateController = TextEditingController();
   final TextEditingController _freePreferenceController = TextEditingController();
 
-
   // State
   String? _gender;
   List<String> _selectedDietaryPreferences = [];
@@ -57,7 +58,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         return;
       }
       if (_currentPage == 2 && (_gender == null || _gender!.isEmpty)) {
-        _errorMessage = "Please select a gender.";
+        _errorMessage = "Please select your gender.";
         return;
       }
       if (_currentPage == 3 && _heightController.text.trim().isEmpty) {
@@ -126,24 +127,24 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     }
   }
 
-  // ======== FIRESTORE SAVE ========
+  // ======== FIRESTORE SAVE & Nutrient Calculation ========
   void _saveUserProfile() async {
     try {
       // 1) Create user in Firebase Auth using the email/password from sign-up
       UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
-        email: widget.email,         // from constructor
-        password: widget.password,   // from constructor
+        email: widget.email,
+        password: widget.password,
       );
 
-    User? user = FirebaseAuth.instance.currentUser;
+      User? user = FirebaseAuth.instance.currentUser;
 
-    if (user == null) {
-      setState(() {
-        _errorMessage = "Failed to create user in Auth.";
-      });
-      return;
-    }
+      if (user == null) {
+        setState(() {
+          _errorMessage = "Failed to create user in Auth.";
+        });
+        return;
+      }
 
       // If the user typed a free-form preference, add it to the list
       final customPref = _freePreferenceController.text.trim();
@@ -156,6 +157,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
 
       FirebaseFirestore firestore = FirebaseFirestore.instance;
 
+      // Save the basic user profile data
       await firestore.collection("users").doc(user.uid).set({
         "email": user.email,
         "createdAt": DateTime.now(),
@@ -168,14 +170,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         "activityLevel": _selectedActivityLevel,
       }, SetOptions(merge: true));
 
-      // 3) Save health metrics
+      // Save health metrics
       String timestamp = DateTime.now().toIso8601String();
-      await firestore
-          .collection("users")
-          .doc(user.uid)
-          .collection("healthMetrics")
-          .doc(timestamp)
-          .set({
+      await firestore.collection("users").doc(user.uid).collection("healthMetrics").doc(timestamp).set({
         "cholesterol": double.tryParse(_cholesterolController.text.trim()) ?? 0,
         "systolicBP": double.tryParse(_systolicBPController.text.trim()) ?? 0,
         "diastolicBP": double.tryParse(_diastolicBPController.text.trim()) ?? 0,
@@ -184,11 +181,28 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         "timestamp": FieldValue.serverTimestamp(),
       });
 
-      // 4) Navigate to Home
+      // 2) Calculate nutrient limits and store them.
+      // Prepare the user data required for nutrient calculation.
+      Map<String, dynamic> nutrientData = {
+        'weight': _weightController.text.trim(),         // in kg
+        'height': _heightController.text.trim(),           // in cm
+        'age': _ageController.text.trim(),                 // in years
+        'gender': _gender,                                 // "male" or "female"
+        'activityLevel': _selectedActivityLevel,           // e.g. "moderately active"
+        'cholesterol': _cholesterolController.text.trim(), // in mg/dl
+        'systolicBP': _systolicBPController.text.trim(),   // in mmHg
+        'diastolicBP': _diastolicBPController.text.trim(), // in mmHg
+        'bloodGlucose': _bloodGlucoseController.text.trim(), // in mg/dl
+        'heartRate': _heartRateController.text.trim(),     // in bpm
+      };
+
+      // Call the nutrient calculation function (from your profile_service.dart)
+      await calculateAndStoreNutrientLimits(nutrientData);
+
+      // 3) Navigate to Home
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen()));
 
     } on FirebaseAuthException catch (e) {
-      // If something goes wrong (e.g. email in use, weak password, etc.)
       setState(() {
         _errorMessage = e.message ?? "Error creating user in Auth.";
       });
@@ -212,7 +226,6 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
 
   // ======== TOP BAR ========
   Widget _buildTopBar() {
-    // Calculate progress fraction
     final double progress = (_currentPage + 1) / totalSteps;
 
     return Column(
@@ -220,45 +233,32 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            // ====== Condition for Back Arrow ======
             if (_currentPage == 0)
-            // Step 1 (index 0) => go back to SignUpPage
               IconButton(
                 icon: const Icon(Icons.arrow_back),
                 color: const Color.fromRGBO(244, 67, 54, 1),
                 onPressed: () {
-                  // Go back to SignUpPage
                   Navigator.pop(context);
                 },
               )
             else
-            // Steps 2..N => go to previous page
               IconButton(
                 icon: const Icon(Icons.arrow_back),
                 color: const Color.fromRGBO(244, 67, 54, 1),
                 onPressed: _previousPage,
               ),
-
             Expanded(
               child: Center(
                 child: Text(
                   "Step ${_currentPage + 1} of $totalSteps",
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
-
-            // Optional symmetrical space on the right
             const SizedBox(width: 48),
           ],
         ),
-
         const SizedBox(height: 5),
-
-        // Progress bar
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: LinearProgressIndicator(
@@ -282,7 +282,6 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Error message (if any)
           if (_errorMessage.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -295,8 +294,6 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                 textAlign: TextAlign.center,
               ),
             ),
-
-          // Next/Finish Button
           SizedBox(
             width: double.infinity,
             child: CustomButton(
@@ -367,17 +364,12 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                 borderSide: const BorderSide(color: Colors.black, width: 2.0),
                 borderRadius: BorderRadius.circular(8.0),
               ),
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 15,
-                horizontal: 20,
-              ),
+              contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
             ),
             dropdownColor: Colors.white,
             hint: Text(
               "Select your gender",
-              style: TextStyle(
-                color: Colors.black.withAlpha((0.4 * 255).toInt()),
-              ),
+              style: TextStyle(color: Colors.black.withAlpha((0.4 * 255).toInt())),
             ),
             items: ["Male", "Female"].map((String value) {
               return DropdownMenuItem<String>(
@@ -485,16 +477,12 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
             "Do you have any dietary preference(s)?",
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-          // Free-form preference input
           const SizedBox(height: 20),
-
           const Text(
             "Describe in your own words:",
             style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
           ),
-
           const SizedBox(height: 8),
-
           TextField(
             controller: _freePreferenceController,
             style: const TextStyle(fontSize: 16.0),
@@ -504,24 +492,17 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                 borderRadius: BorderRadius.circular(8.0),
               ),
             ),
-            maxLines: null, // Allow multiline if needed
+            maxLines: null,
           ),
-
           const SizedBox(height: 20),
-
           const Text(
             "Or select from the list below:",
             style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
           ),
-
           const SizedBox(height: 8),
-
           _buildCheckbox("None"),
-          // _buildCheckbox("Alcohol-Free"),
           _buildCheckbox("Dairy-Free"),
           _buildCheckbox("Gluten-Free"),
-          // _buildCheckbox("Halal"),
-          // _buildCheckbox("Keto"),
           _buildCheckbox("High-Fiber"),
           _buildCheckbox("High-Protein"),
           _buildCheckbox("Low-Calorie"),
@@ -530,21 +511,6 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           _buildCheckbox("Low-Sugar"),
           _buildCheckbox("Vegan"),
           _buildCheckbox("Vegetarian"),
-          // _buildCheckbox("Asian"),
-          // _buildCheckbox("European"),
-          // _buildCheckbox("Filipino"),
-          // _buildCheckbox("French"),
-          // _buildCheckbox("Fusion"),
-          // _buildCheckbox("German"),
-          // _buildCheckbox("Hawaiian"),
-          // _buildCheckbox("Indian"),
-          // _buildCheckbox("Italian"),
-          // _buildCheckbox("Japanese"),
-          // _buildCheckbox("Korean"),
-          // _buildCheckbox("Mexican"),
-          // _buildCheckbox("Taiwanese"),
-          // _buildCheckbox("Thai"),
-          // _buildCheckbox("Vietnamese"),
         ],
       ),
     );
@@ -588,15 +554,10 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
-      // We remove the AppBar to create our custom top layout
       body: SafeArea(
         child: Column(
           children: [
-            // Top bar with back arrow, step text, and progress
             _buildTopBar(),
-
-            // Expanded content for PageView
             Expanded(
               child: PageView(
                 controller: _pageController,
@@ -612,8 +573,6 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                 ],
               ),
             ),
-
-            // Bottom bar with only Next/Finish
             _buildBottomBar(),
           ],
         ),
