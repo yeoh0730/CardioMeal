@@ -50,6 +50,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
             "Description": data["Description"] ?? "No description available.",
             "TotalTime": data["TotalTime"] ?? "N/A",
             "Ingredients": ingredients,
+            "ServingSize": data["RecipeServings"]?.toString() ?? "0",
             "Instructions": instructions,
             "Keywords": keywords,
             "Calories": data["Calories"]?.toString() ?? "0",
@@ -167,7 +168,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
   Widget build(BuildContext context) {
     if (isLoading) {
       return Scaffold(
-        body: const Center(child: CircularProgressIndicator()),
+        body: const Center(child: CircularProgressIndicator(color: Colors.red)),
       );
     }
 
@@ -276,7 +277,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                   ),
                   const SizedBox(height: 20),
                   // Ingredients
-                  const Text("Ingredients", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+                  Text("Ingredients (For ${recipeDetails!["ServingSize"]} servings)", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
                   for (var ingredient in ingredientsList)
                     Padding(

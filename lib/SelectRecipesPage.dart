@@ -17,7 +17,6 @@ class SelectRecipesPage extends StatefulWidget {
 class _SelectRecipesPageState extends State<SelectRecipesPage> {
   List<Map<String, dynamic>> _recipes = [];
   List<Map<String, dynamic>> _filteredRecipes = [];
-  List<Map<String, dynamic>> _selectedRecipes = [];
   TextEditingController _searchController = TextEditingController();
 
   @override
@@ -27,7 +26,8 @@ class _SelectRecipesPageState extends State<SelectRecipesPage> {
   }
 
   Future<void> _fetchRecipes() async {
-    QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('tastyRecipes').get();
+    QuerySnapshot snapshot =
+    await FirebaseFirestore.instance.collection('tastyRecipes').get();
     List<Map<String, dynamic>> fetchedRecipes =
     snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
 
@@ -40,84 +40,106 @@ class _SelectRecipesPageState extends State<SelectRecipesPage> {
   void _filterRecipes(String query) {
     setState(() {
       _filteredRecipes = _recipes
-          .where((recipe) => recipe["Name"].toLowerCase().contains(query.toLowerCase()))
+          .where((recipe) =>
+          recipe["Name"].toLowerCase().contains(query.toLowerCase()))
           .toList();
     });
   }
 
-  void _toggleSelection(Map<String, dynamic> recipe) {
-    setState(() {
-      if (_selectedRecipes.contains(recipe)) {
-        _selectedRecipes.remove(recipe);
-      } else {
-        _selectedRecipes.add(recipe);
-      }
-    });
+  /// Shows a dialog prompting the user to input a serving size.
+  /// Returns the entered serving size, or null if canceled.
+  Future<double?> _showLogMealDialog(Map<String, dynamic> recipe) async {
+    TextEditingController servingController =
+    TextEditingController(text: "1");
+    double? result = await showDialog<double>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: Text("Enter the serving size for ${recipe["Name"]}", style: TextStyle(fontSize: 20)),
+          content: TextField(
+            controller: servingController,
+            keyboardType:
+            const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: "Serving Size",
+              hintText: "e.g., 1",
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel", style: TextStyle(color: Colors.red)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                double serving = double.tryParse(servingController.text) ?? 1.0;
+                Navigator.pop(context, serving);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text("Log Meal", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+    return result;
   }
 
-  Future<void> _confirmSelection() async {
-    if (_selectedRecipes.isEmpty) {
-      Navigator.pop(context, false); // Return false if no selection
-      return;
-    }
-
+  /// Logs the recipe (with serving size) to Firestore.
+  Future<void> _logRecipe(Map<String, dynamic> recipe, double servingSize) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    String formattedDate = widget.selectedDate.toIso8601String().split("T")[0]; // YYYY-MM-DD format
+    String formattedDate =
+    widget.selectedDate.toIso8601String().split("T")[0]; // YYYY-MM-DD
     CollectionReference mealsRef = FirebaseFirestore.instance
         .collection("users")
         .doc(user.uid)
         .collection("loggedMeals");
 
-    // Compute total nutrition
-    double totalCalories = 0, totalSodium = 0, totalCarbs = 0, totalFat = 0;
+    // Calculate nutrient totals based on serving size.
+    double calories = (recipe["Calories"] ?? 0) * servingSize;
+    double sodium = (recipe["SodiumContent"] ?? 0) * servingSize;
+    double carbs = (recipe["CarbohydrateContent"] ?? 0) * servingSize;
+    double fat = (recipe["FatContent"] ?? 0) * servingSize;
 
-    List<Map<String, dynamic>> mealFoods = _selectedRecipes.map((recipe) {
-      totalCalories += recipe["Calories"] ?? 0;
-      totalSodium += recipe["SodiumContent"] ?? 0;
-      totalCarbs += recipe["CarbohydrateContent"] ?? 0;
-      totalFat += recipe["FatContent"] ?? 0;
+    // Prepare food item to store.
+    Map<String, dynamic> foodItem = {
+      "name": recipe["Name"],
+      "calories": recipe["Calories"] ?? 0, // per serving nutrient info
+      "sodium": recipe["SodiumContent"] ?? 0,
+      "carbs": recipe["CarbohydrateContent"] ?? 0,
+      "fat": recipe["FatContent"] ?? 0,
+      "servingSize": servingSize,
+    };
 
-      return {
-        "name": recipe["Name"],
-        "calories": recipe["Calories"] ?? 0,
-        "sodium": recipe["SodiumContent"] ?? 0,
-        "carbs": recipe["CarbohydrateContent"] ?? 0,
-        "fat": recipe["FatContent"] ?? 0
-      };
-    }).toList();
-
-    // Check if meal for the same date & meal type exists
+    // Check if a meal for the same date & meal type exists.
     QuerySnapshot existingMeals = await mealsRef
         .where("date", isEqualTo: formattedDate)
         .where("mealType", isEqualTo: widget.mealType)
         .get();
 
     if (existingMeals.docs.isNotEmpty) {
-      // Update existing meal
       DocumentReference mealDoc = existingMeals.docs.first.reference;
       await mealDoc.update({
-        "foods": FieldValue.arrayUnion(mealFoods),
-        "totalCalories": FieldValue.increment(totalCalories),
-        "totalSodium": FieldValue.increment(totalSodium),
-        "totalCarbs": FieldValue.increment(totalCarbs),
-        "totalFat": FieldValue.increment(totalFat),
+        "foods": FieldValue.arrayUnion([foodItem]),
+        "totalCalories": FieldValue.increment(calories),
+        "totalSodium": FieldValue.increment(sodium),
+        "totalCarbs": FieldValue.increment(carbs),
+        "totalFat": FieldValue.increment(fat),
       });
     } else {
-      // Add a new meal
       await mealsRef.add({
         "mealType": widget.mealType,
         "date": formattedDate,
-        "foods": mealFoods,
-        "totalCalories": totalCalories,
-        "totalSodium": totalSodium,
-        "totalCarbs": totalCarbs,
-        "totalFat": totalFat,
+        "foods": [foodItem],
+        "totalCalories": calories,
+        "totalSodium": sodium,
+        "totalCarbs": carbs,
+        "totalFat": fat,
       });
     }
-
-    Navigator.pop(context, true); // Return true if selection added
   }
 
   @override
@@ -125,12 +147,13 @@ class _SelectRecipesPageState extends State<SelectRecipesPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-          backgroundColor: Colors.white,
-          title: const Text("Log Meals"),
-          scrolledUnderElevation: 0,
+        backgroundColor: Colors.white,
+        title: const Text("Log Meal"),
+        scrolledUnderElevation: 0,
       ),
       body: Padding(
-        padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 0, bottom: 16.0),
+        padding:
+        const EdgeInsets.only(left: 16.0, right: 16.0, top: 0, bottom: 16.0),
         child: Column(
           children: [
             Padding(
@@ -146,24 +169,24 @@ class _SelectRecipesPageState extends State<SelectRecipesPage> {
                 itemCount: _filteredRecipes.length,
                 itemBuilder: (context, index) {
                   final recipe = _filteredRecipes[index];
-                  return CheckboxListTile(
+                  return ListTile(
                     title: Text(recipe["Name"]),
-                    value: _selectedRecipes.contains(recipe),
-                    onChanged: (bool? selected) => _toggleSelection(recipe),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () async {
+                      double? serving = await _showLogMealDialog(recipe);
+                      if (serving != null) {
+                        await _logRecipe(recipe, serving);
+                        // Pop the SelectRecipesPage and return true so the DiaryPage can refresh.
+                        Navigator.pop(context, true);
+                      }
+                    },
                   );
                 },
               ),
             ),
-            SizedBox(
-              width: double.infinity,
-              child: CustomButton(
-                text: "Log Meals",
-                onPressed: _confirmSelection,
-              ),
-            ),
           ],
         ),
-      )
+      ),
     );
   }
 }

@@ -400,50 +400,61 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFFF8F8F8),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.only(
-            left: 16.0,
-            top: 16.0,
-            right: 16.0,
-            bottom: 0,
-          ),
-          child: SingleChildScrollView(
-            child: _isChartLoading
-                ? Center(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 50.0),
-                child: CircularProgressIndicator(),
-              ),
-            )
-                : Column(
-              children: [
-                _buildProgressCard("Today's Progress"),
-                const SizedBox(height: 16),
-                _buildProgressCard("Weekly Progress"),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: _showUpdateDialog,
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white),
-                  child: const Text("Update health metrics",
-                      style: TextStyle(fontSize: 12)),
-                ),
-                _buildMetricGraph("Cholesterol Level", "Cholesterol"),
-                const SizedBox(height: 16),
-                _buildMetricGraph("Systolic BP", "Systolic BP"),
-                const SizedBox(height: 16),
-                _buildMetricGraph("Diastolic BP", "Diastolic BP"),
-                const SizedBox(height: 16),
-                _buildMetricGraph("Blood Glucose", "Blood Glucose"),
-                const SizedBox(height: 16),
-                _buildMetricGraph("Heart Rate", "Heart Rate"),
-              ],
-            ),
-          ),
-        ),
-      ),
+      body: Padding(
+        padding: EdgeInsets.all(16),
+            child: Center(child: Text("Dashboard", style: TextStyle(fontSize: 28),)),
+      )
     );
   }
+
+  // @override
+  // Widget build(BuildContext context) {
+  //   return Scaffold(
+  //     backgroundColor: Color(0xFFF8F8F8),
+  //     body: SafeArea(
+  //       child: Padding(
+  //         padding: const EdgeInsets.only(
+  //           left: 16.0,
+  //           top: 16.0,
+  //           right: 16.0,
+  //           bottom: 0,
+  //         ),
+  //         child: SingleChildScrollView(
+  //           child: _isChartLoading
+  //               ? Center(
+  //             child: Padding(
+  //               padding: const EdgeInsets.only(top: 50.0),
+  //               child: CircularProgressIndicator(),
+  //             ),
+  //           )
+  //               : Column(
+  //             children: [
+  //               _buildProgressCard("Today's Progress"),
+  //               const SizedBox(height: 16),
+  //               _buildProgressCard("Weekly Progress"),
+  //               const SizedBox(height: 16),
+  //               ElevatedButton(
+  //                 onPressed: _showUpdateDialog,
+  //                 style: ElevatedButton.styleFrom(
+  //                     backgroundColor: Colors.red,
+  //                     foregroundColor: Colors.white),
+  //                 child: const Text("Update health metrics",
+  //                     style: TextStyle(fontSize: 12)),
+  //               ),
+  //               _buildMetricGraph("Cholesterol Level", "Cholesterol"),
+  //               const SizedBox(height: 16),
+  //               _buildMetricGraph("Systolic BP", "Systolic BP"),
+  //               const SizedBox(height: 16),
+  //               _buildMetricGraph("Diastolic BP", "Diastolic BP"),
+  //               const SizedBox(height: 16),
+  //               _buildMetricGraph("Blood Glucose", "Blood Glucose"),
+  //               const SizedBox(height: 16),
+  //               _buildMetricGraph("Heart Rate", "Heart Rate"),
+  //             ],
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 }

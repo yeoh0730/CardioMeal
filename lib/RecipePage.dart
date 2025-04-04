@@ -256,7 +256,7 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
                       Container(
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.black12, // or any color you want for the background
+                          color: Colors.white, // or any color you want for the background
                         ),
                         child: IconButton(
                           icon: const Icon(Icons.close, color: Colors.black),
@@ -273,6 +273,7 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
                     mainAxisSize: MainAxisSize.min,
                     children: mealTypes.map((mealType) {
                       return CheckboxListTile(
+                        activeColor: Colors.red,
                         contentPadding: EdgeInsets.zero, // reduce horizontal space
                         title: Text(mealType),
                         value: selectedFilters.contains(mealType),
@@ -393,7 +394,7 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
   Widget _buildRecommendedTab() {
     // 1) If still loading recommended recipes, show spinner
     if (_recommendedLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator(color: Colors.red));
     }
 
     // 2) If done loading but empty

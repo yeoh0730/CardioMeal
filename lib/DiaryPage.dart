@@ -135,6 +135,8 @@ class _DiaryPageState extends State<DiaryPage> {
   }
 
   /// Recompute how many calories, carbs, sodium, and fat the user has consumed so far.
+  /// Recompute how many calories, carbs, sodium, and fat the user has consumed so far,
+  /// taking into account the serving size for each food item.
   void _recalculateConsumedTotals() {
     double totalCals = 0;
     double totalCarbs = 0;
@@ -143,18 +145,21 @@ class _DiaryPageState extends State<DiaryPage> {
 
     _selectedMeals.forEach((mealType, mealList) {
       for (var recipe in mealList) {
-        totalCals += recipe["calories"] ?? 0;
-        totalCarbs += recipe["carbs"] ?? 0;
-        totalSodium += recipe["sodium"] ?? 0;
-        totalFat += recipe["fat"] ?? 0;
+        // Use a default serving size of 1 if not provided.
+        double servingSize = (recipe["servingSize"] as num?)?.toDouble() ?? 1.0;
+
+        totalCals   += (recipe["calories"] ?? 0) * servingSize;
+        totalCarbs  += (recipe["carbs"]    ?? 0) * servingSize;
+        totalSodium += (recipe["sodium"]   ?? 0) * servingSize;
+        totalFat    += (recipe["fat"]      ?? 0) * servingSize;
       }
     });
 
     setState(() {
       _consumedCalories = totalCals;
-      _consumedCarbs = totalCarbs;
-      _consumedSodium = totalSodium;
-      _consumedFat = totalFat;
+      _consumedCarbs    = totalCarbs;
+      _consumedSodium   = totalSodium;
+      _consumedFat      = totalFat;
     });
   }
 
@@ -224,15 +229,20 @@ class _DiaryPageState extends State<DiaryPage> {
     }
   }
 
-  /// Calculate macros for a given meal
+  /// Calculate macros for a given meal, taking into account serving size.
   Map<String, double> _calculateMealNutrition(String mealTitle) {
     double totalCalories = 0, totalFat = 0, totalCarbs = 0, totalSodium = 0;
 
     for (var recipe in _selectedMeals[mealTitle]!) {
-      totalCalories += recipe["calories"] ?? 0;
-      totalFat += recipe["fat"] ?? 0;
-      totalCarbs += recipe["carbs"] ?? 0;
-      totalSodium += recipe["sodium"] ?? 0;
+      // Use a default serving size of 1 if not provided.
+      double servingSize = (recipe["servingSize"] != null)
+          ? (recipe["servingSize"] as num).toDouble()
+          : 1.0;
+
+      totalCalories += (recipe["calories"] ?? 0) * servingSize;
+      totalFat += (recipe["fat"] ?? 0) * servingSize;
+      totalCarbs += (recipe["carbs"] ?? 0) * servingSize;
+      totalSodium += (recipe["sodium"] ?? 0) * servingSize;
     }
 
     return {
@@ -523,6 +533,17 @@ class _DiaryPageState extends State<DiaryPage> {
               // Foods list
               Column(
                 children: _selectedMeals[mealTitle]!.map((recipe) {
+                  final double servingSize = (recipe["servingSize"] as num?)?.toDouble() ?? 1.0;
+                  // If servingSize is an integer (e.g. 3.0), display just '3'; otherwise show the decimal.
+                  String servingSizeStr = servingSize % 1 == 0
+                      ? servingSize.toInt().toString()
+                      : servingSize.toString();
+
+                  final double totalCals = (recipe["calories"] ?? 0) * servingSize;
+                  final double totalSodium = (recipe["sodium"] ?? 0) * servingSize;
+                  final double totalFat = (recipe["fat"] ?? 0) * servingSize;
+                  final double totalCarbs = (recipe["carbs"] ?? 0) * servingSize;
+
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 16.0),
                     child: Row(
@@ -543,14 +564,13 @@ class _DiaryPageState extends State<DiaryPage> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                "Calories: ${recipe["calories"]} | "
-                                    "Sodium: ${recipe["sodium"]} | "
-                                    "Fat: ${recipe["fat"]} | "
-                                    "Carbs: ${recipe["carbs"]} ",
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                ),
+                                // Display scaled nutrient values + serving size
+                                    "Serving size: $servingSizeStr\n"
+                                    "Calories: ${totalCals.toStringAsFixed(0)} | "
+                                    "Sodium: ${totalSodium.toStringAsFixed(0)} | "
+                                    "Fat: ${totalFat.toStringAsFixed(0)} | "
+                                    "Carbs: ${totalCarbs.toStringAsFixed(0)}",
+                                style: const TextStyle(fontSize: 12, color: Colors.grey),
                               ),
                             ],
                           ),
@@ -594,7 +614,7 @@ class _DiaryPageState extends State<DiaryPage> {
   Widget build(BuildContext context) {
     if (_isNutrientLimitsLoading) {
       return Center(
-        child: CircularProgressIndicator(),
+        child: CircularProgressIndicator(color: Colors.red),
       );
     }
 

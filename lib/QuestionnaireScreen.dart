@@ -529,6 +529,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       ),
       value: title,
       groupValue: _selectedActivityLevel,
+      activeColor: Colors.red,
       onChanged: (String? value) {
         if (value != null) {
           setState(() => _selectedActivityLevel = value);

@@ -42,7 +42,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
       body: userData == null
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: Colors.red))
           : SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -224,44 +224,44 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                // const SizedBox(height: 24),
 
-                // 4) HELP Section title
-                Text(
-                  "HELP",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[700],
-                  ),
-                ),
-                const SizedBox(height: 8),
-
-                // 5) Help section card
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      _buildOption(
-                        icon: Icons.help_outline,
-                        title: "About CardioMeal",
-                        onTap: () {
-                          // TODO: Navigate
-                        },
-                      ),
-                    ],
-                  ),
-                ),
+                // // 4) HELP Section title
+                // Text(
+                //   "HELP",
+                //   style: TextStyle(
+                //     fontSize: 16,
+                //     fontWeight: FontWeight.bold,
+                //     color: Colors.grey[700],
+                //   ),
+                // ),
+                // const SizedBox(height: 8),
+                //
+                // // 5) Help section card
+                // Container(
+                //   decoration: BoxDecoration(
+                //     color: Colors.white,
+                //     borderRadius: BorderRadius.circular(16),
+                //     boxShadow: [
+                //       BoxShadow(
+                //         color: Colors.grey.withOpacity(0.1),
+                //         blurRadius: 10,
+                //         offset: const Offset(0, 5),
+                //       ),
+                //     ],
+                //   ),
+                //   child: Column(
+                //     children: [
+                //       _buildOption(
+                //         icon: Icons.help_outline,
+                //         title: "About CardioMeal",
+                //         onTap: () {
+                //           // TODO: Navigate
+                //         },
+                //       ),
+                //     ],
+                //   ),
+                // ),
 
                 const SizedBox(height: 24),
 
@@ -351,7 +351,7 @@ class _ProfilePageState extends State<ProfilePage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
+              child: const Text("Cancel", style: TextStyle(color: Colors.red),),
             ),
             ElevatedButton(
               onPressed: () {
