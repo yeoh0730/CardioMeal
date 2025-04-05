@@ -1,9 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'models/custom_button.dart';
-import 'services/api_service.dart';
-import 'models/recipe_card.dart';
+import '../models/custom_button.dart';
+import '../services/api_service.dart';
+import '../models/recipe_card.dart';
 
 class RecipePage extends StatefulWidget {
   @override

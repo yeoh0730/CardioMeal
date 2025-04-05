@@ -1,8 +1,8 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:project/LoginPage.dart';
-import 'package:project/QuestionnaireScreen.dart';
-import 'models/custom_button.dart';
+import 'package:project/signUp/LoginPage.dart';
+import 'package:project/signUp/QuestionnaireScreen.dart';
+import '../models/custom_button.dart';
 
 class SignUpPage extends StatefulWidget {
   @override

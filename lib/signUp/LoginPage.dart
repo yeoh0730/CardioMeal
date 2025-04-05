@@ -2,8 +2,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'SignUpPage.dart';
-import 'main.dart';
-import 'models/custom_button.dart'; // Import the button component
+import '../main.dart';
+import '../models/custom_button.dart'; // Import the button component
 
 class LoginPage extends StatefulWidget {
   @override

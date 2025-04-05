@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'EditProfilePage.dart';
 import 'EditDietPreferencePage.dart';
 import 'FavouriteRecipesPage.dart';
-import 'LoginPage.dart';
-import 'models/custom_button.dart';
+import '../signUp/LoginPage.dart';
+import '../models/custom_button.dart';
 
 class ProfilePage extends StatefulWidget {
   @override

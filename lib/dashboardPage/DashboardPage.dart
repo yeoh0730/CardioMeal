@@ -5,7 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 // Import your daily nutrient calculation service
-import 'services/daily_nutrient_calculation.dart';
+import '../services/daily_nutrient_calculation.dart';
 
 class DashboardPage extends StatefulWidget {
   @override

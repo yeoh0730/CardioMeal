@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'models/custom_button.dart';
-import 'services/daily_nutrient_calculation.dart';
+import '../models/custom_button.dart';
+import '../services/daily_nutrient_calculation.dart';
 
 class EditProfilePage extends StatefulWidget {
   final Map<String, dynamic>? userData;

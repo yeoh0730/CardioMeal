@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'main.dart';
-import 'models/custom_button.dart';
-import 'models/custom_input_field.dart';
+import '../main.dart';
+import '../models/custom_button.dart';
+import '../models/custom_input_field.dart';
 // Import your profile service where the calculation function is defined.
-import 'services/daily_nutrient_calculation.dart';
+import '../services/daily_nutrient_calculation.dart';
 
 class QuestionnaireScreen extends StatefulWidget {
   final String email;

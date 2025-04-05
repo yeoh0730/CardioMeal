@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import 'models/custom_button.dart';
+import '../models/custom_button.dart';
 
 class SelectRecipesPage extends StatefulWidget {
   final String mealType; // Meal type (Breakfast, Lunch, etc.)

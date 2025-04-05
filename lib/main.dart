@@ -2,12 +2,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:project/DiaryPage.dart';
-import 'package:project/DashboardPage.dart';
-import 'package:project/ProfilePage.dart';
-import 'package:project/RecipePage.dart';
-import 'package:project/RecipeDetailPage.dart';
-import 'LoginPage.dart';
+import 'package:project/diaryPage/DiaryPage.dart';
+import 'package:project/dashboardPage/DashboardPage.dart';
+import 'package:project/userProfile/ProfilePage.dart';
+import 'package:project/recipePage/RecipePage.dart';
+import 'package:project/recipePage/RecipeDetailPage.dart';
+import 'signUp/LoginPage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() async {
