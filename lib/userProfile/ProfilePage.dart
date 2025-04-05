@@ -83,71 +83,91 @@ class _ProfilePageState extends State<ProfilePage> {
                       // Top portion with accent background
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.white, // subtle accent color
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(16),
-                            topRight: Radius.circular(16),
-                          ),
+                          color: Colors.white,
+                          // borderRadius: BorderRadius.only(
+                          //   topLeft: Radius.circular(16),
+                          //   topRight: Radius.circular(16),
+                          // ),
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
+                        padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 16),
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Text(
-                              userData?['name'] ?? 'User Name',
-                              style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                              ),
+                            // CircleAvatar on the left
+                            CircleAvatar(
+                              radius: 30,
+                              backgroundImage: userData?['profilePicture'] != null &&
+                                  (userData?['profilePicture'] as String).isNotEmpty
+                                  ? NetworkImage(userData?['profilePicture'])
+                                  : const AssetImage('assets/profilePicture.jpg')
+                              as ImageProvider,
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              user?.email ?? '',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[600],
+                            const SizedBox(width: 16),
+
+                            // Name and Email on the right, aligned left
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    userData?['name'] ?? 'User Name',
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    user?.email ?? '',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
 
-                      // Divider line to separate accent area from stats
-                      const Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: Color(0xFFECECEC),
-                        indent: 0,
-                        endIndent: 0,
-                      ),
-
-                      // Bottom portion: stats row
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        child: Row(
-                          mainAxisAlignment:
-                          MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _buildStatItem(
-                              label: "Weight",
-                              value: "${userData?['weight'] ?? '-'} kg",
-                            ),
-                            _verticalDivider(),
-                            _buildStatItem(
-                              label: "Height",
-                              value: "${userData?['height'] ?? '-'} cm",
-                            ),
-                            _verticalDivider(),
-                            _buildStatItem(
-                              label: "Age",
-                              value: "${userData?['age'] ?? '-'}",
-                            ),
-                          ],
-                        ),
-                      ),
+                      // // Divider line to separate accent area from stats
+                      // const Divider(
+                      //   height: 1,
+                      //   thickness: 1,
+                      //   color: Color(0xFFECECEC),
+                      //   indent: 0,
+                      //   endIndent: 0,
+                      // ),
+                      //
+                      // // Bottom portion: stats row
+                      // Padding(
+                      //   padding: const EdgeInsets.symmetric(
+                      //     horizontal: 16,
+                      //     vertical: 12,
+                      //   ),
+                      //   child: Row(
+                      //     mainAxisAlignment:
+                      //     MainAxisAlignment.spaceEvenly,
+                      //     children: [
+                      //       _buildStatItem(
+                      //         label: "Weight",
+                      //         value: "${userData?['weight'] ?? '-'} kg",
+                      //       ),
+                      //       _verticalDivider(),
+                      //       _buildStatItem(
+                      //         label: "Height",
+                      //         value: "${userData?['height'] ?? '-'} cm",
+                      //       ),
+                      //       _verticalDivider(),
+                      //       _buildStatItem(
+                      //         label: "Age",
+                      //         value: "${userData?['age'] ?? '-'}",
+                      //       ),
+                      //     ],
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),
