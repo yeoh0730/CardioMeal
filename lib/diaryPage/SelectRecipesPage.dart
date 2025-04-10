@@ -27,7 +27,7 @@ class _SelectRecipesPageState extends State<SelectRecipesPage> {
 
   Future<void> _fetchRecipes() async {
     QuerySnapshot snapshot =
-    await FirebaseFirestore.instance.collection('tastyRecipes').get();
+    await FirebaseFirestore.instance.collection('recipes').get();
     List<Map<String, dynamic>> fetchedRecipes =
     snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
 

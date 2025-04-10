@@ -232,14 +232,14 @@ class _ProfilePageState extends State<ProfilePage> {
                           );
                         },
                       ),
-                      _dividerLine(),
-                      _buildOption(
-                        icon: Icons.notifications_none,
-                        title: "Notifications",
-                        onTap: () {
-                          // TODO: Navigate
-                        },
-                      ),
+                      // _dividerLine(),
+                      // _buildOption(
+                      //   icon: Icons.notifications_none,
+                      //   title: "Notifications",
+                      //   onTap: () {
+                      //     // TODO: Navigate
+                      //   },
+                      // ),
                     ],
                   ),
                 ),

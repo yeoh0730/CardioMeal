@@ -10,6 +10,8 @@ class DiaryPage extends StatefulWidget {
   _DiaryPageState createState() => _DiaryPageState();
 }
 
+Map<String, bool> _hasShownWarningForDate = {};
+
 class _DiaryPageState extends State<DiaryPage> {
   bool _isNutrientLimitsLoading = true;
 
@@ -134,6 +136,66 @@ class _DiaryPageState extends State<DiaryPage> {
     _recalculateConsumedTotals();
   }
 
+  List<String> _notificationQueue = [];
+  bool _isShowingNotification = false;
+
+  void _queueTopNotification(String message, {Color color = Colors.red}) {
+    _notificationQueue.add(message);
+    _runNextNotification(color: color);
+  }
+
+  void _runNextNotification({Color color = Colors.red}) async {
+    if (_isShowingNotification || _notificationQueue.isEmpty) return;
+
+    _isShowingNotification = true;
+    String message = _notificationQueue.removeAt(0);
+
+    final overlay = Overlay.of(context);
+    late OverlayEntry overlayEntry;
+
+    overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: MediaQuery.of(context).padding.top + 10,
+        left: 20,
+        right: 20,
+        child: Material(
+          elevation: 6,
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Colors.white),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    message,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    overlayEntry.remove();
+                    _isShowingNotification = false;
+                    _runNextNotification(color: color); // Proceed to next
+                  },
+                  child: const Icon(Icons.close, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    overlay.insert(overlayEntry);
+  }
+
   /// Recompute how many calories, carbs, sodium, and fat the user has consumed so far.
   /// Recompute how many calories, carbs, sodium, and fat the user has consumed so far,
   /// taking into account the serving size for each food item.
@@ -161,6 +223,30 @@ class _DiaryPageState extends State<DiaryPage> {
       _consumedSodium   = totalSodium;
       _consumedFat      = totalFat;
     });
+
+    String todayKey = DateFormat('yyyy-MM-dd').format(_selectedDate);
+    if (!(_hasShownWarningForDate[todayKey] ?? false)) {
+      _notificationQueue.clear();
+
+      if (_consumedCalories > (_userCalories ?? 0)) {
+        double exceeded = _consumedCalories - (_userCalories ?? 0);
+        _queueTopNotification("Calorie intake exceeded by ${exceeded.toStringAsFixed(0)} kcal");
+      }
+      if (_consumedCarbs > (_userCarbLimit ?? 0)) {
+        double exceeded = _consumedCarbs - (_userCarbLimit ?? 0);
+        _queueTopNotification("Carbohydrate intake exceeded by ${exceeded.toStringAsFixed(0)} g");
+      }
+      if (_consumedSodium > (_userSodiumLimit ?? 0)) {
+        double exceeded = _consumedSodium - (_userSodiumLimit ?? 0);
+        _queueTopNotification("Sodium intake exceeded by ${exceeded.toStringAsFixed(0)} mg");
+      }
+      if (_consumedFat > (_userFatLimit ?? 0)) {
+        double exceeded = _consumedFat - (_userFatLimit ?? 0);
+        _queueTopNotification("Fat intake exceeded by ${exceeded.toStringAsFixed(0)} g");
+      }
+
+      _hasShownWarningForDate[todayKey] = true;
+    }
   }
 
   Future<void> _deleteFood(String mealType, Map<String, dynamic> foodItem) async {
@@ -225,6 +311,9 @@ class _DiaryPageState extends State<DiaryPage> {
       ),
     );
     if (mealAdded == true) {
+      // Reset warning for today so it shows again after logging a meal
+      String todayKey = DateFormat('yyyy-MM-dd').format(_selectedDate);
+      _hasShownWarningForDate[todayKey] = false;
       _fetchLoggedMeals();
     }
   }
@@ -258,13 +347,12 @@ class _DiaryPageState extends State<DiaryPage> {
   double get dailyGoal => _userCalories ?? 0;
 
   double get consumed => _consumedCalories;
-  double get left => (dailyGoal - consumed).clamp(0, dailyGoal);
+  double get rawLeft => dailyGoal - consumed;
 
   // For macros, we do something similar:
   double get userCarbLimit => _userCarbLimit ?? 0;
   double get userSodiumLimit => _userSodiumLimit ?? 0;
   double get userFatLimit => _userFatLimit ?? 0;
-
 
   // Build top "Daily Goal" portion with ring + macros
   Widget _buildDailyGoalSection() {  // If nutrient limits are still loading, show a spinner
@@ -309,16 +397,24 @@ class _DiaryPageState extends State<DiaryPage> {
             percent: (consumed / dailyGoal).clamp(0, 1),
             backgroundColor: Colors.grey[200]!,
             progressColor: Colors.red,
+            circularStrokeCap: CircularStrokeCap.round,
             center: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   hasData
-                      ? left.toStringAsFixed(0)
+                      ? rawLeft < 0
+                      ? "${rawLeft.abs().toStringAsFixed(0)}"
+                      : "${rawLeft.toStringAsFixed(0)}"
                       : "0",
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: rawLeft < 0 ? Colors.red : Colors.black,
+                  ),
                 ),
-                const Text("calories left", style: TextStyle(fontSize: 14)),
+                rawLeft < 0 ? Text("calories over", style: TextStyle(fontSize: 14)) : Text("calories left", style: TextStyle(fontSize: 14)),
+
               ],
             ),
           ),
@@ -335,24 +431,61 @@ class _DiaryPageState extends State<DiaryPage> {
                   ),
                   const SizedBox(height: 4),
                   SizedBox(
-                    width: 60,
+                    width: 70,
+                    height: 8,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(6),
-                      child: LinearProgressIndicator(
-                        value: carbProgress,
-                        backgroundColor: Colors.grey[300],
-                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.orange),
-                        minHeight: 6,
+                      child: SizedBox(
+                        width: 60,
+                        height: 10,
+                        child: Stack(
+                          children: [
+                            // Background bar
+                            Container(
+                              width: 70,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            // Foreground filled bar
+                            FractionallySizedBox(
+                              widthFactor: carbProgress, // between 0 and 1
+                              child: Container(
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color: Colors.orange,
+                                  borderRadius: BorderRadius.circular(20), // fully rounded ends
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    hasData
-                        ? "${_consumedCarbs.toStringAsFixed(0)}/${userCarbLimit.toStringAsFixed(0)}g"
-                        : "0/0g",
-                    style: const TextStyle(fontSize: 14),
-                  ),
+                  hasData
+                      ? RichText(
+                    text: TextSpan(
+                      style: const TextStyle(fontSize: 14),
+                      children: [
+                        TextSpan(
+                          text: _consumedCarbs.toStringAsFixed(0),
+                          style: TextStyle(
+                            color: _consumedCarbs > userCarbLimit ? Colors.red : Colors.black,
+                              // fontWeight: _consumedCarbs > userCarbLimit ? FontWeight.bold : FontWeight.normal
+                          ),
+                        ),
+                        TextSpan(
+                          text: "/${userCarbLimit!.toStringAsFixed(0)}g",
+                          style: const TextStyle(color: Colors.black),
+                        ),
+                      ],
+                    ),
+                  )
+                      : const Text("0/0g", style: TextStyle(fontSize: 14)),
                 ],
               ),
               // Sodium
@@ -364,24 +497,61 @@ class _DiaryPageState extends State<DiaryPage> {
                   ),
                   const SizedBox(height: 4),
                   SizedBox(
-                    width: 60,
+                    width: 70,
+                    height: 8,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(6),
-                      child: LinearProgressIndicator(
-                        value: sodiumProgress,
-                        backgroundColor: Colors.grey[300],
-                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
-                        minHeight: 6,
+                      child: SizedBox(
+                        width: 60,
+                        height: 10,
+                        child: Stack(
+                          children: [
+                            // Background bar
+                            Container(
+                              width: 70,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            // Foreground filled bar
+                            FractionallySizedBox(
+                              widthFactor: sodiumProgress, // between 0 and 1
+                              child: Container(
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color: Colors.blue,
+                                  borderRadius: BorderRadius.circular(20), // fully rounded ends
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    hasData
-                        ? "${_consumedSodium.toStringAsFixed(0)}/${userSodiumLimit.toStringAsFixed(0)}mg"
-                        : "0/0mg",
-                    style: const TextStyle(fontSize: 14),
-                  ),
+                  hasData
+                      ? RichText(
+                    text: TextSpan(
+                      style: const TextStyle(fontSize: 14),
+                      children: [
+                        TextSpan(
+                          text: _consumedSodium.toStringAsFixed(0),
+                          style: TextStyle(
+                            color: _consumedSodium > userSodiumLimit ? Colors.red : Colors.black,
+                              // fontWeight: _consumedSodium > userSodiumLimit ? FontWeight.bold : FontWeight.normal
+                          ),
+                        ),
+                        TextSpan(
+                          text: "/${userSodiumLimit!.toStringAsFixed(0)}mg",
+                          style: const TextStyle(color: Colors.black),
+                        ),
+                      ],
+                    ),
+                  )
+                      : const Text("0/0mg", style: TextStyle(fontSize: 14)),
                 ],
               ),
               // Fat
@@ -393,24 +563,61 @@ class _DiaryPageState extends State<DiaryPage> {
                   ),
                   const SizedBox(height: 4),
                   SizedBox(
-                    width: 60,
+                    width: 70,
+                    height: 8,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(6),
-                      child: LinearProgressIndicator(
-                        value: fatProgress,
-                        backgroundColor: Colors.grey[300],
-                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.purple),
-                        minHeight: 6,
+                      child: SizedBox(
+                        width: 60,
+                        height: 10,
+                        child: Stack(
+                          children: [
+                            // Background bar
+                            Container(
+                              width: 70,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            // Foreground filled bar
+                            FractionallySizedBox(
+                              widthFactor: fatProgress, // between 0 and 1
+                              child: Container(
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color: Colors.purple,
+                                  borderRadius: BorderRadius.circular(20), // fully rounded ends
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    hasData
-                        ? "${_consumedFat.toStringAsFixed(0)}/${userFatLimit.toStringAsFixed(0)}g"
-                        : "0/0g",
-                    style: const TextStyle(fontSize: 14),
-                  ),
+                  hasData
+                      ? RichText(
+                    text: TextSpan(
+                      style: const TextStyle(fontSize: 14),
+                      children: [
+                        TextSpan(
+                          text: _consumedFat.toStringAsFixed(0),
+                          style: TextStyle(
+                            color: _consumedFat > userFatLimit ? Colors.red : Colors.black,
+                              // fontWeight: _consumedFat > userFatLimit ? FontWeight.bold : FontWeight.normal
+                          ),
+                        ),
+                        TextSpan(
+                          text: "/${userFatLimit!.toStringAsFixed(0)}g",
+                          style: const TextStyle(color: Colors.black),
+                        ),
+                      ],
+                    ),
+                  )
+                      : const Text("0/0g", style: TextStyle(fontSize: 14)),
                 ],
               ),
             ],

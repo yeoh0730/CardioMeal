@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:project/signUp/LoginPage.dart';
 import 'package:project/signUp/QuestionnaireScreen.dart';
 import '../models/custom_button.dart';
+import '../services/auth_service.dart';
 
 class SignUpPage extends StatefulWidget {
   @override
@@ -10,6 +11,7 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
+  // final AuthService _authService = AuthService();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
@@ -49,6 +51,57 @@ class _SignUpPageState extends State<SignUpPage> {
               password: password,
             ),
       ),
+    );
+  }
+
+  // // Google Sign-Up integration.
+  // void _signUpWithGoogle() async {
+  //   final userCredential = await _authService.signInWithGoogle();
+  //   if (userCredential == null) return;
+  //   // If this is a new account created via Google, go to QuestionnaireScreen.
+  //   if (userCredential.additionalUserInfo != null && userCredential.additionalUserInfo!.isNewUser) {
+  //     Navigator.pushReplacement(
+  //       context,
+  //       MaterialPageRoute(
+  //         builder: (context) => QuestionnaireScreen(
+  //           email: userCredential.user!.email ?? "",
+  //           password: "", // No password for Google sign in.
+  //         ),
+  //       ),
+  //     );
+  //   } else {
+  //     // If the user already exists, you might navigate to LoginPage or HomeScreen.
+  //     Navigator.pushReplacement(
+  //         context, MaterialPageRoute(builder: (context) => LoginPage()));
+  //   }
+  // }
+
+  // Divider with "OR"
+  Widget _buildDividerWithText(String text) {
+    return Row(
+      children: [
+        Expanded(
+          child: Divider(
+            thickness: 1,
+            color: Colors.grey.shade300,
+            endIndent: 8,
+          ),
+        ),
+        Text(
+          text,
+          style: TextStyle(
+            color: Colors.grey.shade700,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        Expanded(
+          child: Divider(
+            thickness: 1,
+            color: Colors.grey.shade300,
+            indent: 8,
+          ),
+        ),
+      ],
     );
   }
 
@@ -184,6 +237,31 @@ class _SignUpPageState extends State<SignUpPage> {
                     ],
                   ),
                 ),
+
+                const SizedBox(height: 20),
+                // // Divider with "OR"
+                // _buildDividerWithText("OR"),
+                // const SizedBox(height: 20),
+                //
+                // // Sign Up with Google Button
+                // SizedBox(
+                //   width: double.infinity,
+                //   child: ElevatedButton.icon(
+                //     icon: Image.asset(
+                //       'assets/googleLogo.png',
+                //       height: 24,
+                //       width: 24,
+                //     ),
+                //     label: const Text("Sign Up with Google"),
+                //     onPressed: _signUpWithGoogle,
+                //     style: ElevatedButton.styleFrom(
+                //       foregroundColor: Colors.black,
+                //       backgroundColor: Colors.white,
+                //       padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12), // Button size
+                //       side: BorderSide(color: Colors.grey.shade300),
+                //     ),
+                //   ),
+                // ),
 
                 if (_errorMessage.isNotEmpty)
                   Padding(

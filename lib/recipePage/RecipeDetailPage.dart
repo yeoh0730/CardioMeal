@@ -30,7 +30,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
   void _fetchRecipeDetails() async {
     try {
       DocumentSnapshot doc = await FirebaseFirestore.instance
-          .collection('tastyRecipes')
+          .collection('recipes')
           .doc(widget.recipeId)
           .get();
 

@@ -34,7 +34,7 @@ class _FavoriteRecipesPageState extends State<FavoriteRecipesPage> {
     List<Map<String, dynamic>> recipes = [];
     for (String id in recipeIds) {
       final doc = await FirebaseFirestore.instance
-          .collection('tastyRecipes')
+          .collection('recipes')
           .doc(id)
           .get();
       if (doc.exists) {

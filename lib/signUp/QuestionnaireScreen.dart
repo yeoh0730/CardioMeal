@@ -4,8 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../main.dart';
 import '../models/custom_button.dart';
 import '../models/custom_input_field.dart';
-// Import your profile service where the calculation function is defined.
 import '../services/daily_nutrient_calculation.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 
 class QuestionnaireScreen extends StatefulWidget {
   final String email;
@@ -348,36 +348,53 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
             "What is your gender?",
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 20),
-          DropdownButtonFormField<String>(
+          const SizedBox(height: 15),
+          DropdownButtonFormField2<String>(
             value: _gender,
+            isExpanded: true,
             decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
               border: OutlineInputBorder(
-                borderSide: const BorderSide(color: Colors.grey, width: 2.0),
-                borderRadius: BorderRadius.circular(8.0),
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.grey),
               ),
               enabledBorder: OutlineInputBorder(
-                borderSide: const BorderSide(color: Colors.grey, width: 2.0),
-                borderRadius: BorderRadius.circular(8.0),
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.grey),
               ),
               focusedBorder: OutlineInputBorder(
-                borderSide: const BorderSide(color: Colors.black, width: 2.0),
-                borderRadius: BorderRadius.circular(8.0),
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.black),
               ),
-              contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
             ),
-            dropdownColor: Colors.white,
-            hint: Text(
+            hint: const Text(
               "Select your gender",
-              style: TextStyle(color: Colors.black.withAlpha((0.4 * 255).toInt())),
+              style: TextStyle(
+                fontSize: 16, // ✅ Hint text size
+                color: Colors.black54,
+              ),
             ),
-            items: ["Male", "Female"].map((String value) {
-              return DropdownMenuItem<String>(
-                value: value,
-                child: Text(value),
-              );
-            }).toList(),
-            onChanged: (value) => setState(() => _gender = value),
+            items: ["Male", "Female"]
+                .map((item) => DropdownMenuItem<String>(
+              value: item,
+              child: Text(item),
+            ))
+                .toList(),
+            onChanged: (value) {
+              setState(() => _gender = value);
+            },
+            dropdownStyleData: DropdownStyleData(
+              maxHeight: 150,
+              elevation: 2,
+              offset: const Offset(0, -5), // you can adjust this
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            menuItemStyleData: const MenuItemStyleData(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+            ),
           ),
         ],
       ),

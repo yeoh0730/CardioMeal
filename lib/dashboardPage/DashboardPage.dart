@@ -396,65 +396,328 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0xFFF8F8F8),
-      body: Padding(
-        padding: EdgeInsets.all(16),
-            child: Center(child: Text("Dashboard", style: TextStyle(fontSize: 28),)),
-      )
-    );
-  }
-
   // @override
   // Widget build(BuildContext context) {
   //   return Scaffold(
   //     backgroundColor: Color(0xFFF8F8F8),
-  //     body: SafeArea(
-  //       child: Padding(
-  //         padding: const EdgeInsets.only(
-  //           left: 16.0,
-  //           top: 16.0,
-  //           right: 16.0,
-  //           bottom: 0,
-  //         ),
-  //         child: SingleChildScrollView(
-  //           child: _isChartLoading
-  //               ? Center(
-  //             child: Padding(
-  //               padding: const EdgeInsets.only(top: 50.0),
-  //               child: CircularProgressIndicator(),
-  //             ),
-  //           )
-  //               : Column(
-  //             children: [
-  //               _buildProgressCard("Today's Progress"),
-  //               const SizedBox(height: 16),
-  //               _buildProgressCard("Weekly Progress"),
-  //               const SizedBox(height: 16),
-  //               ElevatedButton(
-  //                 onPressed: _showUpdateDialog,
-  //                 style: ElevatedButton.styleFrom(
-  //                     backgroundColor: Colors.red,
-  //                     foregroundColor: Colors.white),
-  //                 child: const Text("Update health metrics",
-  //                     style: TextStyle(fontSize: 12)),
-  //               ),
-  //               _buildMetricGraph("Cholesterol Level", "Cholesterol"),
-  //               const SizedBox(height: 16),
-  //               _buildMetricGraph("Systolic BP", "Systolic BP"),
-  //               const SizedBox(height: 16),
-  //               _buildMetricGraph("Diastolic BP", "Diastolic BP"),
-  //               const SizedBox(height: 16),
-  //               _buildMetricGraph("Blood Glucose", "Blood Glucose"),
-  //               const SizedBox(height: 16),
-  //               _buildMetricGraph("Heart Rate", "Heart Rate"),
-  //             ],
-  //           ),
-  //         ),
-  //       ),
-  //     ),
+  //     body: Padding(
+  //       padding: EdgeInsets.all(16),
+  //           child: Center(child: Text("Dashboard", style: TextStyle(fontSize: 28),)),
+  //     )
   //   );
   // }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Color(0xFFF8F8F8),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.only(
+            left: 16.0,
+            top: 16.0,
+            right: 16.0,
+            bottom: 0,
+          ),
+          child: SingleChildScrollView(
+            child: _isChartLoading
+                ? Center(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 50.0),
+                child: CircularProgressIndicator(),
+              ),
+            )
+                : Column(
+              children: [
+                _buildProgressCard("Today's Progress"),
+                const SizedBox(height: 16),
+                _buildProgressCard("Weekly Progress"),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _showUpdateDialog,
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white),
+                  child: const Text("Update health metrics",
+                      style: TextStyle(fontSize: 12)),
+                ),
+                _buildMetricGraph("Cholesterol Level", "Cholesterol"),
+                const SizedBox(height: 16),
+                _buildMetricGraph("Systolic BP", "Systolic BP"),
+                const SizedBox(height: 16),
+                _buildMetricGraph("Diastolic BP", "Diastolic BP"),
+                const SizedBox(height: 16),
+                _buildMetricGraph("Blood Glucose", "Blood Glucose"),
+                const SizedBox(height: 16),
+                _buildMetricGraph("Heart Rate", "Heart Rate"),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+//
+// // Updated DashboardPage with separate metric updates
+// import 'package:flutter/material.dart';
+// import 'package:fl_chart/fl_chart.dart';
+// import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'package:firebase_auth/firebase_auth.dart';
+// import 'package:intl/intl.dart';
+//
+// class DashboardPage extends StatefulWidget {
+//   @override
+//   _DashboardPageState createState() => _DashboardPageState();
+// }
+//
+// class _DashboardPageState extends State<DashboardPage> {
+//   final FirebaseAuth _auth = FirebaseAuth.instance;
+//   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+//   Map<String, List<FlSpot>> healthData = {
+//     "Cholesterol": [],
+//     "SystolicBP": [],
+//     "DiastolicBP": [],
+//     "BloodGlucose": [],
+//     "HeartRate": [],
+//   };
+//
+//   List<DateTime> metricDates = [];
+//   bool _isChartLoading = true;
+//
+//   @override
+//   void initState() {
+//     super.initState();
+//     _fetchHealthHistory();
+//   }
+//
+//   void _fetchHealthHistory() async {
+//     User? user = _auth.currentUser;
+//     if (user == null) return;
+//
+//     Map<String, List<FlSpot>> newHealthData = {
+//       "Cholesterol": [],
+//       "SystolicBP": [],
+//       "DiastolicBP": [],
+//       "BloodGlucose": [],
+//       "HeartRate": [],
+//     };
+//
+//     List<DateTime> allDates = [];
+//
+//     final metricKeys = newHealthData.keys.toList();
+//
+//     for (String metric in metricKeys) {
+//       final metricKey = metric.toLowerCase();
+//       final snapshot = await _firestore
+//           .collection("users")
+//           .doc(user.uid)
+//           .collection("${metricKey}Metrics")
+//           .orderBy("timestamp", descending: false)
+//           .get();
+//
+//       for (int i = 0; i < snapshot.docs.length; i++) {
+//         var data = snapshot.docs[i].data();
+//         Timestamp? ts = data["timestamp"];
+//         double value = (data["value"] ?? 0).toDouble();
+//         if (ts != null) {
+//           DateTime date = ts.toDate();
+//           newHealthData[metric]!.add(FlSpot(i.toDouble(), value));
+//           if (metric == metricKeys[0]) allDates.add(date);
+//         }
+//       }
+//     }
+//
+//     setState(() {
+//       healthData = newHealthData;
+//       metricDates = allDates;
+//       _isChartLoading = false;
+//     });
+//   }
+//
+//   void _showSingleMetricDialog(String metricKey) {
+//     TextEditingController valueController = TextEditingController();
+//
+//     showDialog(
+//       context: context,
+//       builder: (context) {
+//         return AlertDialog(
+//           title: Text("Update $metricKey"),
+//           content: TextField(
+//             controller: valueController,
+//             keyboardType: TextInputType.number,
+//             decoration: InputDecoration(
+//               labelText: "$metricKey Value",
+//               border: OutlineInputBorder(),
+//             ),
+//           ),
+//           actions: [
+//             TextButton(
+//               onPressed: () => Navigator.pop(context),
+//               child: const Text("Cancel"),
+//             ),
+//             ElevatedButton(
+//               onPressed: () {
+//                 double? value = double.tryParse(valueController.text);
+//                 if (value != null) {
+//                   _saveSingleMetric(metricKey, value);
+//                 }
+//                 Navigator.pop(context);
+//               },
+//               child: const Text("Save"),
+//             ),
+//           ],
+//         );
+//       },
+//     );
+//   }
+//
+//   Future<void> _saveSingleMetric(String metricKey, double value) async {
+//     User? user = _auth.currentUser;
+//     if (user == null) return;
+//
+//     await _firestore
+//         .collection("users")
+//         .doc(user.uid)
+//         .collection("${metricKey.toLowerCase()}Metrics")
+//         .add({
+//       "value": value,
+//       "timestamp": FieldValue.serverTimestamp(),
+//     });
+//
+//     _fetchHealthHistory();
+//   }
+//
+//   Widget _buildMetricGraph(String title, String metricKey) {
+//     return Card(
+//       color: Colors.white,
+//       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+//       elevation: 2,
+//       child: Padding(
+//         padding: const EdgeInsets.all(12.0),
+//         child: Column(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           children: [
+//             Row(
+//               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//               children: [
+//                 Text(title,
+//                     style: const TextStyle(
+//                         fontSize: 16, fontWeight: FontWeight.bold)),
+//                 IconButton(
+//                   icon: const Icon(Icons.add),
+//                   onPressed: () => _showSingleMetricDialog(metricKey),
+//                 ),
+//               ],
+//             ),
+//             const SizedBox(height: 20),
+//             SizedBox(
+//               height: 200,
+//               child: LineChart(
+//                 LineChartData(
+//                   backgroundColor: Colors.white,
+//                   gridData: FlGridData(show: false),
+//                   borderData: FlBorderData(
+//                       show: true, border: Border.all(color: Colors.white)),
+//                   titlesData: FlTitlesData(
+//                     leftTitles: AxisTitles(
+//                       sideTitles: SideTitles(
+//                         showTitles: true,
+//                         reservedSize: 40,
+//                         getTitlesWidget: (value, meta) {
+//                           return Text(value.toInt().toString(),
+//                               style: const TextStyle(fontSize: 10));
+//                         },
+//                       ),
+//                     ),
+//                     rightTitles:
+//                     AxisTitles(sideTitles: SideTitles(showTitles: false)),
+//                     topTitles:
+//                     AxisTitles(sideTitles: SideTitles(showTitles: false)),
+//                     bottomTitles: AxisTitles(
+//                       sideTitles: SideTitles(
+//                         showTitles: true,
+//                         interval: 1,
+//                         getTitlesWidget: (value, meta) {
+//                           int index = value.toInt();
+//                           if (index < 0 || index >= metricDates.length) {
+//                             return const SizedBox.shrink();
+//                           }
+//                           DateTime date = metricDates[index];
+//                           String formatted = DateFormat('MM/dd').format(date);
+//                           return Text(formatted,
+//                               style: const TextStyle(fontSize: 10));
+//                         },
+//                       ),
+//                     ),
+//                   ),
+//                   lineBarsData: [
+//                     LineChartBarData(
+//                       isCurved: true,
+//                       color: Colors.red,
+//                       barWidth: 2,
+//                       spots: healthData[metricKey]!,
+//                       belowBarData: BarAreaData(
+//                         show: true,
+//                         gradient: LinearGradient(
+//                           colors: [
+//                             Colors.red.withOpacity(0.3),
+//                             Colors.red.withOpacity(0.005),
+//                           ],
+//                           begin: Alignment.topCenter,
+//                           end: Alignment.bottomCenter,
+//                         ),
+//                       ),
+//                     ),
+//                   ],
+//                 ),
+//               ),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       backgroundColor: Color(0xFFF8F8F8),
+//       body: SafeArea(
+//         child: Padding(
+//           padding: const EdgeInsets.all(16.0),
+//           child: _isChartLoading
+//               ? Center(child: CircularProgressIndicator())
+//               : SingleChildScrollView(
+//             child: Column(
+//               children: [
+//                 _buildMetricGraph("Cholesterol", "Cholesterol"),
+//                 const SizedBox(height: 16),
+//                 _buildMetricGraph("Systolic BP", "SystolicBP"),
+//                 const SizedBox(height: 16),
+//                 _buildMetricGraph("Diastolic BP", "DiastolicBP"),
+//                 const SizedBox(height: 16),
+//                 _buildMetricGraph("Blood Glucose", "BloodGlucose"),
+//                 const SizedBox(height: 16),
+//                 _buildMetricGraph("Heart Rate", "HeartRate"),
+//               ],
+//             ),
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
+

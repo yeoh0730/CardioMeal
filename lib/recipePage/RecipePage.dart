@@ -159,7 +159,7 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
     setState(() => _isLoading = true);
 
     Query query = FirebaseFirestore.instance
-        .collection('tastyRecipes')
+        .collection('recipes')
         .limit(limit);
 
     if (_lastDocument != null) {
@@ -507,7 +507,7 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
               const SizedBox(width: 8),
               // Filter button
               IconButton(
-                icon: const Icon(Icons.filter_alt_rounded, color: Colors.red),
+                icon: const Icon(Icons.tune, color: Colors.red),
                 onPressed: _openFilterDialog,
               ),
             ],
