@@ -1,482 +1,11 @@
-import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart'; // For Graphs
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:intl/intl.dart';
-
-// Import your daily nutrient calculation service
-import '../services/daily_nutrient_calculation.dart';
-
-class DashboardPage extends StatefulWidget {
-  @override
-  _DashboardPageState createState() => _DashboardPageState();
-}
-
-class _DashboardPageState extends State<DashboardPage> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  Map<String, List<FlSpot>> healthData = {
-    "Cholesterol": [],
-    "Systolic BP": [],
-    "Diastolic BP": [],
-    "Blood Glucose": [],
-    "Heart Rate": [],
-  };
-
-  // List of dates for the X-axis
-  List<DateTime> metricDates = [];
-  bool _isChartLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchHealthHistory();
-  }
-
-  // ✅ Fetch user health metrics history from Firestore
-  void _fetchHealthHistory() async {
-    User? user = _auth.currentUser;
-    if (user == null) return;
-
-    QuerySnapshot snapshot = await _firestore
-        .collection("users")
-        .doc(user.uid)
-        .collection("healthMetrics")
-        .orderBy("timestamp", descending: false)
-        .get();
-
-    if (snapshot.docs.isNotEmpty) {
-      // Temp containers
-      Map<String, List<FlSpot>> newHealthData = {
-        "Cholesterol": [],
-        "Systolic BP": [],
-        "Diastolic BP": [],
-        "Blood Glucose": [],
-        "Heart Rate": [],
-      };
-
-      // Clear old dates
-      List<DateTime> newDates = [];
-
-      for (int i = 0; i < snapshot.docs.length; i++) {
-        var data = snapshot.docs[i].data() as Map<String, dynamic>;
-
-        // Convert Firestore Timestamp to DateTime
-        Timestamp? ts = data["timestamp"];
-        DateTime date = DateTime.now();
-        if (ts != null) {
-          date = ts.toDate();
-        }
-        newDates.add(date);
-
-        // Convert each metric to double & create FlSpot
-        newHealthData["Cholesterol"]!
-            .add(FlSpot(i.toDouble(), (data["cholesterol"] ?? 0).toDouble()));
-        newHealthData["Systolic BP"]!
-            .add(FlSpot(i.toDouble(), (data["systolicBP"] ?? 0).toDouble()));
-        newHealthData["Diastolic BP"]!
-            .add(FlSpot(i.toDouble(), (data["diastolicBP"] ?? 0).toDouble()));
-        newHealthData["Blood Glucose"]!
-            .add(FlSpot(i.toDouble(), (data["bloodGlucose"] ?? 0).toDouble()));
-        newHealthData["Heart Rate"]!
-            .add(FlSpot(i.toDouble(), (data["heartRate"] ?? 0).toDouble()));
-      }
-
-      setState(() {
-        healthData = newHealthData;
-        metricDates = newDates; // store date list for X-axis labels
-        _isChartLoading = false;
-      });
-    }
-  }
-
-  // ✅ Show Dialog for Updating Health Metrics
-  void _showUpdateDialog() {
-    TextEditingController cholesterolController = TextEditingController();
-    TextEditingController systolicBPController = TextEditingController();
-    TextEditingController diastolicBPController = TextEditingController();
-    TextEditingController bloodGlucoseController = TextEditingController();
-    TextEditingController heartRateController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          title: const Text("Update Health Metrics"),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildTextField("Cholesterol", cholesterolController),
-                _buildTextField("Systolic BP", systolicBPController),
-                _buildTextField("Diastolic BP", diastolicBPController),
-                _buildTextField("Blood Glucose", bloodGlucoseController),
-                _buildTextField("Heart Rate", heartRateController),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                _updateHealthMetrics(
-                  double.tryParse(cholesterolController.text) ?? 0,
-                  double.tryParse(systolicBPController.text) ?? 0,
-                  double.tryParse(diastolicBPController.text) ?? 0,
-                  double.tryParse(bloodGlucoseController.text) ?? 0,
-                  double.tryParse(heartRateController.text) ?? 0,
-                );
-                Navigator.pop(context);
-              },
-              child: const Text("Save"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _updateHealthMetrics(
-      double cholesterol,
-      double systolicBP,
-      double diastolicBP,
-      double bloodGlucose,
-      double heartRate,
-      ) async {
-    User? user = _auth.currentUser;
-    if (user == null) return;
-
-    String timestamp = DateTime.now().toIso8601String();
-
-    // 1. Save to healthMetrics subcollection only.
-    await _firestore
-        .collection("users")
-        .doc(user.uid)
-        .collection("healthMetrics")
-        .doc(timestamp)
-        .set({
-      "cholesterol": cholesterol,
-      "systolicBP": systolicBP,
-      "diastolicBP": diastolicBP,
-      "bloodGlucose": bloodGlucose,
-      "heartRate": heartRate,
-      "timestamp": FieldValue.serverTimestamp(),
-    });
-
-    // 2. Remove the code that updated the main user doc:
-    //    (We do NOT want to store these fields in the main doc)
-    // await _firestore.collection("users").doc(user.uid).update({...});
-
-    // 3. Fetch the main user doc for weight, height, age, etc.
-    DocumentSnapshot userDocSnap =
-    await _firestore.collection("users").doc(user.uid).get();
-    Map<String, dynamic>? userDocData =
-    userDocSnap.data() as Map<String, dynamic>?;
-
-    if (userDocData != null) {
-      // 4. Combine user doc data with new health metrics (in memory).
-      final combinedData = {
-        ...userDocData,
-        "cholesterol": cholesterol,
-        "systolicBP": systolicBP,
-        "diastolicBP": diastolicBP,
-        "bloodGlucose": bloodGlucose,
-        "heartRate": heartRate,
-      };
-
-      // 5. Recalculate new nutrient limits
-      Map<String, dynamic> newLimits =
-      await calculateNutrientLimitsWithoutStoring(combinedData);
-
-      // 6. Retrieve the latest nutrientHistory entry
-      QuerySnapshot lastNutrientSnap = await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('nutrientHistory')
-          .orderBy('timestamp', descending: true)
-          .limit(1)
-          .get();
-
-      bool shouldUpdate = true;
-      if (lastNutrientSnap.docs.isNotEmpty) {
-        DocumentSnapshot lastDoc = lastNutrientSnap.docs.first;
-        Map<String, dynamic>? lastData =
-        lastDoc.data() as Map<String, dynamic>?;
-        if (lastData != null) {
-          // Compare new data with the last entry.
-          shouldUpdate = nutrientDataHasChanged(lastData, newLimits);
-        }
-      }
-
-      if (shouldUpdate) {
-        // 7. Store new nutrient limits & risk category
-        await storeNutrientLimits(user.uid, newLimits);
-      } else {
-        print("No changes in nutrient limits. Not storing a new document.");
-      }
-    }
-
-    // 8. Refresh the health history (to update the chart)
-    _fetchHealthHistory();
-  }
-
-  // ✅ Helper Widget for Text Input Fields
-  Widget _buildTextField(String label, TextEditingController controller) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: TextField(
-        controller: controller,
-        keyboardType: TextInputType.number,
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-        ),
-      ),
-    );
-  }
-
-  // ✅ Build Graph UI for each Metric
-  Widget _buildMetricGraph(String title, String metricKey) {
-    return Card(
-      color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title,
-                style:
-                const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 20),
-            SizedBox(
-              height: 200,
-              child: LineChart(
-                LineChartData(
-                  backgroundColor: Colors.white,
-                  gridData: FlGridData(show: false),
-                  borderData: FlBorderData(
-                      show: true, border: Border.all(color: Colors.white)),
-                  titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 40,
-                        getTitlesWidget: (value, meta) {
-                          return Text(value.toInt().toString(),
-                              style: const TextStyle(fontSize: 10));
-                        },
-                      ),
-                    ),
-                    rightTitles:
-                    AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    topTitles:
-                    AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        interval: 1,
-                        getTitlesWidget: (value, meta) {
-                          int index = value.toInt();
-                          if (index < 0 || index >= metricDates.length) {
-                            return const SizedBox.shrink();
-                          }
-                          DateTime date = metricDates[index];
-                          String formatted = DateFormat('MM/dd').format(date);
-                          return Text(formatted,
-                              style: const TextStyle(fontSize: 10));
-                        },
-                      ),
-                    ),
-                  ),
-                  lineBarsData: [
-                    LineChartBarData(
-                      isCurved: true,
-                      color: Colors.red,
-                      barWidth: 2,
-                      spots: healthData[metricKey]!,
-                      belowBarData: BarAreaData(
-                        show: true,
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.red.withOpacity(0.3),
-                            Colors.red.withOpacity(0.005),
-                          ],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ✅ Progress Card Widget
-  Widget _buildProgressCard(String title) {
-    return Card(
-      color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title,
-                style:
-                const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Image.asset(
-                  'assets/logo.png',
-                  width: 50,
-                  height: 50,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Wrap(
-                    spacing: 20,
-                    alignment: WrapAlignment.center,
-                    children: [
-                      _buildCircularProgress(0.28, "Sodium"),
-                      _buildCircularProgress(0.65, "Fat"),
-                      _buildCircularProgress(0.85, "Carb"),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ✅ Circular Progress Bar for Nutrients
-  Widget _buildCircularProgress(double value, String label) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 50,
-          height: 50,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              CircularProgressIndicator(
-                value: value,
-                backgroundColor: Colors.grey[300],
-                valueColor: AlwaysStoppedAnimation<Color>(
-                    value > 0.6 ? Colors.blue : Colors.orange),
-                strokeWidth: 6,
-              ),
-              Center(
-                child: Text("${(value * 100).toInt()}%",
-                    style: const TextStyle(fontSize: 12)),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 5),
-        Text(label,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-      ],
-    );
-  }
-
-  // @override
-  // Widget build(BuildContext context) {
-  //   return Scaffold(
-  //     backgroundColor: Color(0xFFF8F8F8),
-  //     body: Padding(
-  //       padding: EdgeInsets.all(16),
-  //           child: Center(child: Text("Dashboard", style: TextStyle(fontSize: 28),)),
-  //     )
-  //   );
-  // }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0xFFF8F8F8),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.only(
-            left: 16.0,
-            top: 16.0,
-            right: 16.0,
-            bottom: 0,
-          ),
-          child: SingleChildScrollView(
-            child: _isChartLoading
-                ? Center(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 50.0),
-                child: CircularProgressIndicator(),
-              ),
-            )
-                : Column(
-              children: [
-                _buildProgressCard("Today's Progress"),
-                const SizedBox(height: 16),
-                _buildProgressCard("Weekly Progress"),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: _showUpdateDialog,
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white),
-                  child: const Text("Update health metrics",
-                      style: TextStyle(fontSize: 12)),
-                ),
-                _buildMetricGraph("Cholesterol Level", "Cholesterol"),
-                const SizedBox(height: 16),
-                _buildMetricGraph("Systolic BP", "Systolic BP"),
-                const SizedBox(height: 16),
-                _buildMetricGraph("Diastolic BP", "Diastolic BP"),
-                const SizedBox(height: 16),
-                _buildMetricGraph("Blood Glucose", "Blood Glucose"),
-                const SizedBox(height: 16),
-                _buildMetricGraph("Heart Rate", "Heart Rate"),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-//
-// // Updated DashboardPage with separate metric updates
 // import 'package:flutter/material.dart';
-// import 'package:fl_chart/fl_chart.dart';
+// import 'package:fl_chart/fl_chart.dart'; // For Graphs
 // import 'package:cloud_firestore/cloud_firestore.dart';
 // import 'package:firebase_auth/firebase_auth.dart';
 // import 'package:intl/intl.dart';
+//
+// // Import your daily nutrient calculation service
+// import '../services/daily_nutrient_calculation.dart';
 //
 // class DashboardPage extends StatefulWidget {
 //   @override
@@ -488,12 +17,13 @@ class _DashboardPageState extends State<DashboardPage> {
 //   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 //   Map<String, List<FlSpot>> healthData = {
 //     "Cholesterol": [],
-//     "SystolicBP": [],
-//     "DiastolicBP": [],
-//     "BloodGlucose": [],
-//     "HeartRate": [],
+//     "Systolic BP": [],
+//     "Diastolic BP": [],
+//     "Blood Glucose": [],
+//     "Heart Rate": [],
 //   };
 //
+//   // List of dates for the X-axis
 //   List<DateTime> metricDates = [];
 //   bool _isChartLoading = true;
 //
@@ -503,64 +33,87 @@ class _DashboardPageState extends State<DashboardPage> {
 //     _fetchHealthHistory();
 //   }
 //
+//   // ✅ Fetch user health metrics history from Firestore
 //   void _fetchHealthHistory() async {
 //     User? user = _auth.currentUser;
 //     if (user == null) return;
 //
-//     Map<String, List<FlSpot>> newHealthData = {
-//       "Cholesterol": [],
-//       "SystolicBP": [],
-//       "DiastolicBP": [],
-//       "BloodGlucose": [],
-//       "HeartRate": [],
-//     };
+//     QuerySnapshot snapshot = await _firestore
+//         .collection("users")
+//         .doc(user.uid)
+//         .collection("healthMetrics")
+//         .orderBy("timestamp", descending: false)
+//         .get();
 //
-//     List<DateTime> allDates = [];
+//     if (snapshot.docs.isNotEmpty) {
+//       // Temp containers
+//       Map<String, List<FlSpot>> newHealthData = {
+//         "Cholesterol": [],
+//         "Systolic BP": [],
+//         "Diastolic BP": [],
+//         "Blood Glucose": [],
+//         "Heart Rate": [],
+//       };
 //
-//     final metricKeys = newHealthData.keys.toList();
-//
-//     for (String metric in metricKeys) {
-//       final metricKey = metric.toLowerCase();
-//       final snapshot = await _firestore
-//           .collection("users")
-//           .doc(user.uid)
-//           .collection("${metricKey}Metrics")
-//           .orderBy("timestamp", descending: false)
-//           .get();
+//       // Clear old dates
+//       List<DateTime> newDates = [];
 //
 //       for (int i = 0; i < snapshot.docs.length; i++) {
-//         var data = snapshot.docs[i].data();
-//         Timestamp? ts = data["timestamp"];
-//         double value = (data["value"] ?? 0).toDouble();
-//         if (ts != null) {
-//           DateTime date = ts.toDate();
-//           newHealthData[metric]!.add(FlSpot(i.toDouble(), value));
-//           if (metric == metricKeys[0]) allDates.add(date);
-//         }
-//       }
-//     }
+//         var data = snapshot.docs[i].data() as Map<String, dynamic>;
 //
-//     setState(() {
-//       healthData = newHealthData;
-//       metricDates = allDates;
-//       _isChartLoading = false;
-//     });
+//         // Convert Firestore Timestamp to DateTime
+//         Timestamp? ts = data["timestamp"];
+//         DateTime date = DateTime.now();
+//         if (ts != null) {
+//           date = ts.toDate();
+//         }
+//         newDates.add(date);
+//
+//         // Convert each metric to double & create FlSpot
+//         newHealthData["Cholesterol"]!
+//             .add(FlSpot(i.toDouble(), (data["cholesterol"] ?? 0).toDouble()));
+//         newHealthData["Systolic BP"]!
+//             .add(FlSpot(i.toDouble(), (data["systolicBP"] ?? 0).toDouble()));
+//         newHealthData["Diastolic BP"]!
+//             .add(FlSpot(i.toDouble(), (data["diastolicBP"] ?? 0).toDouble()));
+//         newHealthData["Blood Glucose"]!
+//             .add(FlSpot(i.toDouble(), (data["bloodGlucose"] ?? 0).toDouble()));
+//         newHealthData["Heart Rate"]!
+//             .add(FlSpot(i.toDouble(), (data["heartRate"] ?? 0).toDouble()));
+//       }
+//
+//       setState(() {
+//         healthData = newHealthData;
+//         metricDates = newDates; // store date list for X-axis labels
+//         _isChartLoading = false;
+//       });
+//     }
 //   }
 //
-//   void _showSingleMetricDialog(String metricKey) {
-//     TextEditingController valueController = TextEditingController();
+//   // ✅ Show Dialog for Updating Health Metrics
+//   void _showUpdateDialog() {
+//     TextEditingController cholesterolController = TextEditingController();
+//     TextEditingController systolicBPController = TextEditingController();
+//     TextEditingController diastolicBPController = TextEditingController();
+//     TextEditingController bloodGlucoseController = TextEditingController();
+//     TextEditingController heartRateController = TextEditingController();
 //
 //     showDialog(
 //       context: context,
 //       builder: (context) {
 //         return AlertDialog(
-//           title: Text("Update $metricKey"),
-//           content: TextField(
-//             controller: valueController,
-//             keyboardType: TextInputType.number,
-//             decoration: InputDecoration(
-//               labelText: "$metricKey Value",
-//               border: OutlineInputBorder(),
+//           backgroundColor: Colors.white,
+//           title: const Text("Update Health Metrics"),
+//           content: SingleChildScrollView(
+//             child: Column(
+//               mainAxisSize: MainAxisSize.min,
+//               children: [
+//                 _buildTextField("Cholesterol", cholesterolController),
+//                 _buildTextField("Systolic BP", systolicBPController),
+//                 _buildTextField("Diastolic BP", diastolicBPController),
+//                 _buildTextField("Blood Glucose", bloodGlucoseController),
+//                 _buildTextField("Heart Rate", heartRateController),
+//               ],
 //             ),
 //           ),
 //           actions: [
@@ -570,10 +123,13 @@ class _DashboardPageState extends State<DashboardPage> {
 //             ),
 //             ElevatedButton(
 //               onPressed: () {
-//                 double? value = double.tryParse(valueController.text);
-//                 if (value != null) {
-//                   _saveSingleMetric(metricKey, value);
-//                 }
+//                 _updateHealthMetrics(
+//                   double.tryParse(cholesterolController.text) ?? 0,
+//                   double.tryParse(systolicBPController.text) ?? 0,
+//                   double.tryParse(diastolicBPController.text) ?? 0,
+//                   double.tryParse(bloodGlucoseController.text) ?? 0,
+//                   double.tryParse(heartRateController.text) ?? 0,
+//                 );
 //                 Navigator.pop(context);
 //               },
 //               child: const Text("Save"),
@@ -584,22 +140,106 @@ class _DashboardPageState extends State<DashboardPage> {
 //     );
 //   }
 //
-//   Future<void> _saveSingleMetric(String metricKey, double value) async {
+//   void _updateHealthMetrics(
+//       double cholesterol,
+//       double systolicBP,
+//       double diastolicBP,
+//       double bloodGlucose,
+//       double heartRate,
+//       ) async {
 //     User? user = _auth.currentUser;
 //     if (user == null) return;
 //
+//     String timestamp = DateTime.now().toIso8601String();
+//
+//     // 1. Save to healthMetrics subcollection only.
 //     await _firestore
 //         .collection("users")
 //         .doc(user.uid)
-//         .collection("${metricKey.toLowerCase()}Metrics")
-//         .add({
-//       "value": value,
+//         .collection("healthMetrics")
+//         .doc(timestamp)
+//         .set({
+//       "cholesterol": cholesterol,
+//       "systolicBP": systolicBP,
+//       "diastolicBP": diastolicBP,
+//       "bloodGlucose": bloodGlucose,
+//       "heartRate": heartRate,
 //       "timestamp": FieldValue.serverTimestamp(),
 //     });
 //
+//     // 2. Remove the code that updated the main user doc:
+//     //    (We do NOT want to store these fields in the main doc)
+//     // await _firestore.collection("users").doc(user.uid).update({...});
+//
+//     // 3. Fetch the main user doc for weight, height, age, etc.
+//     DocumentSnapshot userDocSnap =
+//     await _firestore.collection("users").doc(user.uid).get();
+//     Map<String, dynamic>? userDocData =
+//     userDocSnap.data() as Map<String, dynamic>?;
+//
+//     if (userDocData != null) {
+//       // 4. Combine user doc data with new health metrics (in memory).
+//       final combinedData = {
+//         ...userDocData,
+//         "cholesterol": cholesterol,
+//         "systolicBP": systolicBP,
+//         "diastolicBP": diastolicBP,
+//         "bloodGlucose": bloodGlucose,
+//         "heartRate": heartRate,
+//       };
+//
+//       // 5. Recalculate new nutrient limits
+//       Map<String, dynamic> newLimits =
+//       await calculateNutrientLimitsWithoutStoring(combinedData);
+//
+//       // 6. Retrieve the latest nutrientHistory entry
+//       QuerySnapshot lastNutrientSnap = await _firestore
+//           .collection('users')
+//           .doc(user.uid)
+//           .collection('nutrientHistory')
+//           .orderBy('timestamp', descending: true)
+//           .limit(1)
+//           .get();
+//
+//       bool shouldUpdate = true;
+//       if (lastNutrientSnap.docs.isNotEmpty) {
+//         DocumentSnapshot lastDoc = lastNutrientSnap.docs.first;
+//         Map<String, dynamic>? lastData =
+//         lastDoc.data() as Map<String, dynamic>?;
+//         if (lastData != null) {
+//           // Compare new data with the last entry.
+//           shouldUpdate = nutrientDataHasChanged(lastData, newLimits);
+//         }
+//       }
+//
+//       if (shouldUpdate) {
+//         // 7. Store new nutrient limits & risk category
+//         await storeNutrientLimits(user.uid, newLimits);
+//       } else {
+//         print("No changes in nutrient limits. Not storing a new document.");
+//       }
+//     }
+//
+//     // 8. Refresh the health history (to update the chart)
 //     _fetchHealthHistory();
 //   }
 //
+//   // ✅ Helper Widget for Text Input Fields
+//   Widget _buildTextField(String label, TextEditingController controller) {
+//     return Padding(
+//       padding: const EdgeInsets.only(bottom: 8),
+//       child: TextField(
+//         controller: controller,
+//         keyboardType: TextInputType.number,
+//         decoration: InputDecoration(
+//           labelText: label,
+//           border: const OutlineInputBorder(),
+//         ),
+//       ),
+//     );
+//   }
+//
+//   // ✅ Build Graph UI for each Metric
 //   Widget _buildMetricGraph(String title, String metricKey) {
 //     return Card(
 //       color: Colors.white,
@@ -610,18 +250,9 @@ class _DashboardPageState extends State<DashboardPage> {
 //         child: Column(
 //           crossAxisAlignment: CrossAxisAlignment.start,
 //           children: [
-//             Row(
-//               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//               children: [
-//                 Text(title,
-//                     style: const TextStyle(
-//                         fontSize: 16, fontWeight: FontWeight.bold)),
-//                 IconButton(
-//                   icon: const Icon(Icons.add),
-//                   onPressed: () => _showSingleMetricDialog(metricKey),
-//                 ),
-//               ],
-//             ),
+//             Text(title,
+//                 style:
+//                 const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
 //             const SizedBox(height: 20),
 //             SizedBox(
 //               height: 200,
@@ -691,27 +322,134 @@ class _DashboardPageState extends State<DashboardPage> {
 //     );
 //   }
 //
+//   // ✅ Progress Card Widget
+//   Widget _buildProgressCard(String title) {
+//     return Card(
+//       color: Colors.white,
+//       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+//       elevation: 2,
+//       child: Padding(
+//         padding: const EdgeInsets.all(12.0),
+//         child: Column(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           children: [
+//             Text(title,
+//                 style:
+//                 const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+//             const SizedBox(height: 10),
+//             Row(
+//               children: [
+//                 Image.asset(
+//                   'assets/logo.png',
+//                   width: 50,
+//                   height: 50,
+//                 ),
+//                 const SizedBox(width: 10),
+//                 Expanded(
+//                   child: Wrap(
+//                     spacing: 20,
+//                     alignment: WrapAlignment.center,
+//                     children: [
+//                       _buildCircularProgress(0.28, "Sodium"),
+//                       _buildCircularProgress(0.65, "Fat"),
+//                       _buildCircularProgress(0.85, "Carb"),
+//                     ],
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+//
+//   // ✅ Circular Progress Bar for Nutrients
+//   Widget _buildCircularProgress(double value, String label) {
+//     return Column(
+//       mainAxisSize: MainAxisSize.min,
+//       children: [
+//         SizedBox(
+//           width: 50,
+//           height: 50,
+//           child: Stack(
+//             fit: StackFit.expand,
+//             children: [
+//               CircularProgressIndicator(
+//                 value: value,
+//                 backgroundColor: Colors.grey[300],
+//                 valueColor: AlwaysStoppedAnimation<Color>(
+//                     value > 0.6 ? Colors.blue : Colors.orange),
+//                 strokeWidth: 6,
+//               ),
+//               Center(
+//                 child: Text("${(value * 100).toInt()}%",
+//                     style: const TextStyle(fontSize: 12)),
+//               ),
+//             ],
+//           ),
+//         ),
+//         const SizedBox(height: 5),
+//         Text(label,
+//             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+//       ],
+//     );
+//   }
+//
+//   // @override
+//   // Widget build(BuildContext context) {
+//   //   return Scaffold(
+//   //     backgroundColor: Color(0xFFF8F8F8),
+//   //     body: Padding(
+//   //       padding: EdgeInsets.all(16),
+//   //           child: Center(child: Text("Dashboard", style: TextStyle(fontSize: 28),)),
+//   //     )
+//   //   );
+//   // }
+//
 //   @override
 //   Widget build(BuildContext context) {
 //     return Scaffold(
 //       backgroundColor: Color(0xFFF8F8F8),
 //       body: SafeArea(
 //         child: Padding(
-//           padding: const EdgeInsets.all(16.0),
-//           child: _isChartLoading
-//               ? Center(child: CircularProgressIndicator())
-//               : SingleChildScrollView(
-//             child: Column(
+//           padding: const EdgeInsets.only(
+//             left: 16.0,
+//             top: 16.0,
+//             right: 16.0,
+//             bottom: 0,
+//           ),
+//           child: SingleChildScrollView(
+//             child: _isChartLoading
+//                 ? Center(
+//               child: Padding(
+//                 padding: const EdgeInsets.only(top: 50.0),
+//                 child: CircularProgressIndicator(),
+//               ),
+//             )
+//                 : Column(
 //               children: [
-//                 _buildMetricGraph("Cholesterol", "Cholesterol"),
+//                 _buildProgressCard("Today's Progress"),
 //                 const SizedBox(height: 16),
-//                 _buildMetricGraph("Systolic BP", "SystolicBP"),
+//                 _buildProgressCard("Weekly Progress"),
 //                 const SizedBox(height: 16),
-//                 _buildMetricGraph("Diastolic BP", "DiastolicBP"),
+//                 ElevatedButton(
+//                   onPressed: _showUpdateDialog,
+//                   style: ElevatedButton.styleFrom(
+//                       backgroundColor: Colors.red,
+//                       foregroundColor: Colors.white),
+//                   child: const Text("Update health metrics",
+//                       style: TextStyle(fontSize: 12)),
+//                 ),
+//                 _buildMetricGraph("Cholesterol Level", "Cholesterol"),
 //                 const SizedBox(height: 16),
-//                 _buildMetricGraph("Blood Glucose", "BloodGlucose"),
+//                 _buildMetricGraph("Systolic BP", "Systolic BP"),
 //                 const SizedBox(height: 16),
-//                 _buildMetricGraph("Heart Rate", "HeartRate"),
+//                 _buildMetricGraph("Diastolic BP", "Diastolic BP"),
+//                 const SizedBox(height: 16),
+//                 _buildMetricGraph("Blood Glucose", "Blood Glucose"),
+//                 const SizedBox(height: 16),
+//                 _buildMetricGraph("Heart Rate", "Heart Rate"),
 //               ],
 //             ),
 //           ),
@@ -720,4 +458,393 @@ class _DashboardPageState extends State<DashboardPage> {
 //     );
 //   }
 // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
+
+class DashboardPage extends StatefulWidget {
+  @override
+  _DashboardPageState createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  DateTime _selectedDate = DateTime.now();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  Map<String, List<FlSpot>> healthData = {
+    "Cholesterol": [],
+    "SystolicBP": [],
+    "DiastolicBP": [],
+    "BloodGlucose": [],
+    "HeartRate": [],
+  };
+
+  List<DateTime> metricDates = [];
+  bool _isChartLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchHealthHistory();
+  }
+
+  // void _fetchHealthHistory() async {
+  //   User? user = _auth.currentUser;
+  //   if (user == null) return;
+  //
+  //   Map<String, List<FlSpot>> newHealthData = {
+  //     "Cholesterol": [],
+  //     "SystolicBP": [],
+  //     "DiastolicBP": [],
+  //     "BloodGlucose": [],
+  //     "HeartRate": [],
+  //   };
+  //
+  //   List<DateTime> allDates = [];
+  //
+  //   final metricKeys = newHealthData.keys.toList();
+  //
+  //   for (String metric in metricKeys) {
+  //     final metricKey = metric.toLowerCase();
+  //     final snapshot = await _firestore
+  //         .collection("users")
+  //         .doc(user.uid)
+  //         .collection("${metricKey}Metrics")
+  //         .orderBy("timestamp", descending: false)
+  //         .get();
+  //
+  //     for (int i = 0; i < snapshot.docs.length; i++) {
+  //       var data = snapshot.docs[i].data();
+  //       Timestamp? ts = data["timestamp"];
+  //       double value = (data["value"] ?? 0).toDouble();
+  //       if (ts != null) {
+  //         DateTime date = ts.toDate();
+  //         newHealthData[metric]!.add(FlSpot(i.toDouble(), value));
+  //         if (metric == metricKeys[0]) allDates.add(date);
+  //       }
+  //     }
+  //   }
+  //
+  //   setState(() {
+  //     healthData = newHealthData;
+  //     metricDates = allDates;
+  //     _isChartLoading = false;
+  //   });
+  // }
+
+  void _fetchHealthHistory() async {
+    User? user = _auth.currentUser;
+    if (user == null) return;
+
+    QuerySnapshot snapshot = await _firestore
+        .collection("users")
+        .doc(user.uid)
+        .collection("healthMetrics")
+        .orderBy("timestamp", descending: false)
+        .get();
+
+    Map<String, List<FlSpot>> newHealthData = {
+      "Cholesterol": [],
+      "SystolicBP": [],
+      "DiastolicBP": [],
+      "BloodGlucose": [],
+      "HeartRate": [],
+    };
+
+    List<DateTime> newDates = [];
+
+    for (int i = 0; i < snapshot.docs.length; i++) {
+      var data = snapshot.docs[i].data() as Map<String, dynamic>;
+      Timestamp? ts = data["timestamp"];
+      DateTime date = ts?.toDate() ?? DateTime.now();
+      newDates.add(date);
+
+      newHealthData["Cholesterol"]!
+          .add(FlSpot(i.toDouble(), (data["cholesterol"] ?? 0).toDouble()));
+      newHealthData["SystolicBP"]!
+          .add(FlSpot(i.toDouble(), (data["systolicBP"] ?? 0).toDouble()));
+      newHealthData["DiastolicBP"]!
+          .add(FlSpot(i.toDouble(), (data["diastolicBP"] ?? 0).toDouble()));
+      newHealthData["BloodGlucose"]!
+          .add(FlSpot(i.toDouble(), (data["bloodGlucose"] ?? 0).toDouble()));
+      newHealthData["HeartRate"]!
+          .add(FlSpot(i.toDouble(), (data["heartRate"] ?? 0).toDouble()));
+    }
+
+    setState(() {
+      healthData = newHealthData;
+      metricDates = newDates;
+      _isChartLoading = false;
+    });
+  }
+
+  void _showSingleMetricDialog(String metricKey) {
+    TextEditingController valueController = TextEditingController();
+    _selectedDate = DateTime.now(); // Reset to now by default
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text("Update $metricKey"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: valueController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: "$metricKey Value",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Date: ${DateFormat('yyyy-MM-dd').format(_selectedDate)}"),
+                      TextButton(
+                        onPressed: () async {
+                          DateTime? picked = await showDatePicker(
+                            context: context,
+                            initialDate: _selectedDate,
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime.now(),
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              _selectedDate = picked;
+                            });
+                          }
+                        },
+                        child: const Text("Change"),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Cancel"),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    double? value = double.tryParse(valueController.text);
+                    if (value != null) {
+                      _saveSingleMetric(metricKey, value, _selectedDate);
+                    }
+                    Navigator.pop(context);
+                  },
+                  child: const Text("Save"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _saveSingleMetric(String metricKey, double value, DateTime selectedDate) async {
+    User? user = _auth.currentUser;
+    if (user == null) return;
+
+    await _firestore
+        .collection("users")
+        .doc(user.uid)
+        .collection("healthMetrics")
+        .add({
+      "timestamp": Timestamp.fromDate(selectedDate),
+      metricKey.toLowerCase(): value,
+    });
+
+    _fetchHealthHistory();
+  }
+
+  Widget _buildMetricGraph(String title, String metricKey) {
+    return Card(
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.add, size: 18, color: Colors.white),
+                    onPressed: () => _showSingleMetricDialog(metricKey),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              height: 200,
+              child: LineChart(
+                LineChartData(
+                  backgroundColor: Colors.white,
+                  gridData: FlGridData(show: true),
+                  borderData: FlBorderData(show: true, border: Border.all(color: Colors.white)),
+                  titlesData: FlTitlesData(
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 40,
+                        getTitlesWidget: (value, meta) {
+                          return Text(value.toInt().toString(), style: const TextStyle(fontSize: 10));
+                        },
+                      ),
+                    ),
+                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        interval: 1,
+                        getTitlesWidget: (value, meta) {
+                          int index = value.toInt();
+                          if (index < 0 || index >= metricDates.length) {
+                            return const SizedBox.shrink();
+                          }
+                          DateTime date = metricDates[index];
+                          String formatted = DateFormat('MM/dd').format(date);
+                          return Text(formatted, style: const TextStyle(fontSize: 10));
+                        },
+                      ),
+                    ),
+                  ),
+                  lineBarsData: [
+                    LineChartBarData(
+                      isCurved: true,
+                      color: Colors.red,
+                      barWidth: 2,
+                      spots: healthData[metricKey]!,
+                      belowBarData: BarAreaData(
+                        show: true,
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.red.withOpacity(0.3),
+                            Colors.red.withOpacity(0.005),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHealthProgressTab() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: _isChartLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+        child: Column(
+          children: [
+            _buildMetricGraph("Cholesterol", "Cholesterol"),
+            const SizedBox(height: 16),
+            _buildMetricGraph("Systolic BP", "SystolicBP"),
+            const SizedBox(height: 16),
+            _buildMetricGraph("Diastolic BP", "DiastolicBP"),
+            const SizedBox(height: 16),
+            _buildMetricGraph("Blood Glucose", "BloodGlucose"),
+            const SizedBox(height: 16),
+            _buildMetricGraph("Heart Rate", "HeartRate"),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNutrientTab() {
+    return const Center(
+      child: Text(
+        "Nutrient tracking coming soon!",
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8F8F8),
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(48), // sets a fixed AppBar height
+          child: AppBar(
+            backgroundColor: const Color(0xFFF8F8F8),
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            titleSpacing: 0,
+            bottom: TabBar(
+              tabs: [
+                Tab(text: "Health Progress"),
+                Tab(text: "Nutrient Intake"),
+              ],
+              labelColor: Colors.red,
+              indicatorColor: Colors.red,
+              overlayColor: WidgetStateProperty.resolveWith<Color?>(
+                    (Set<WidgetState> states) {
+                  if (states.contains(WidgetState.pressed)) {
+                    // Return your custom pressed color here:
+                    return Colors.grey[100];
+                  }
+                  return null; // default ripple color if not pressed
+                },
+              ),
+            ),
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            _buildHealthProgressTab(),
+            _buildNutrientTab(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 

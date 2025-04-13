@@ -333,11 +333,22 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                   const SizedBox(height: 10),
                   Wrap(
                     spacing: 8,
-                    runSpacing: 8,
+                    runSpacing: 10,
                     children: keywordsList.map((keyword) {
-                      return Chip(
-                        label: Text(keyword),
-                        backgroundColor: Colors.grey[200],
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        child: Text(
+                          keyword,
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       );
                     }).toList(),
                   ),

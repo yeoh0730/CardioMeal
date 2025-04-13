@@ -19,6 +19,12 @@ class QuestionnaireScreen extends StatefulWidget {
 }
 
 class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
+  OverlayEntry? _activeTooltip;
+  void _dismissTooltip() {
+    _activeTooltip?.remove();
+    _activeTooltip = null;
+  }
+
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
@@ -485,50 +491,55 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   }
 
   Widget _buildPage7() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Do you have any dietary preference(s)?",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            "Describe in your own words:",
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _freePreferenceController,
-            style: const TextStyle(fontSize: 16.0),
-            decoration: InputDecoration(
-              hintText: "e.g., I prefer dairy-free dishes or meals that contain salmon.",
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8.0),
-              ),
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: _dismissTooltip,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Do you have any dietary preference(s)?",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            maxLines: null,
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            "Or select from the list below:",
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(height: 8),
-          _buildCheckbox("None"),
-          _buildCheckbox("Dairy-Free"),
-          _buildCheckbox("Gluten-Free"),
-          _buildCheckbox("High-Fiber"),
-          _buildCheckbox("High-Protein"),
-          _buildCheckbox("Low-Calorie"),
-          _buildCheckbox("Low-Carb"),
-          _buildCheckbox("Low-Fat"),
-          _buildCheckbox("Low-Sugar"),
-          _buildCheckbox("Vegan"),
-          _buildCheckbox("Vegetarian"),
-        ],
+            const SizedBox(height: 20),
+            const Text(
+              "Describe in your own words:",
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _freePreferenceController,
+              style: const TextStyle(fontSize: 16.0),
+              decoration: InputDecoration(
+                hintText: "e.g., I prefer dairy-free dishes or meals that contain salmon.",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+              ),
+              maxLines: null,
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              "Or select from the list below:",
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 8),
+            _buildCheckbox("None"),
+            _buildCheckbox("Dairy-Free", infoText: "Dairy-free diets exclude milk, cheese, yogurt, and other dairy products. Suitable for people with lactose intolerance or dairy allergies."),
+            _buildCheckbox("Gluten-Free", infoText: "Gluten-free diets exclude wheat, barley, rye, and other gluten-containing foods. Important for people with celiac disease or gluten sensitivity."),
+            _buildCheckbox("High-Fiber"),
+            _buildCheckbox("High-Protein"),
+            _buildCheckbox("Low-Calorie"),
+            _buildCheckbox("Low-Carb"),
+            _buildCheckbox("Low-Fat"),
+            _buildCheckbox("Low-Sugar"),
+            _buildCheckbox("Vegan", infoText: "Vegan diets exclude all animal products including meat, dairy, eggs, and honey. Suitable for those following a plant-based lifestyle.",),
+            _buildCheckbox("Vegetarian", infoText: "Vegetarian diets exclude meat and fish but may include dairy and eggs. Ideal for those avoiding meat but not all animal products.",
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -556,13 +567,85 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     );
   }
 
-  // ======== CHECKBOX FOR DIETARY PREFERENCES ========
-  Widget _buildCheckbox(String title) {
+  Widget _buildCheckbox(String title, {String? infoText}) {
+    final GlobalKey iconKey = GlobalKey();
+
+    void _showTooltip() {
+      final renderBox = iconKey.currentContext?.findRenderObject() as RenderBox?;
+      final overlay = Overlay.of(context).context.findRenderObject() as RenderBox?;
+      if (renderBox == null || overlay == null) return;
+
+      final position = renderBox.localToGlobal(Offset.zero, ancestor: overlay);
+
+      _dismissTooltip(); // hide any previous tooltip
+
+      _activeTooltip = OverlayEntry(
+        builder: (context) => Positioned(
+          left: position.dx,
+          top: position.dy + renderBox.size.height + 5,
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              margin: const EdgeInsets.only(top: 4),
+              constraints: const BoxConstraints(maxWidth: 260),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 8,
+                    offset: Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Text(
+                infoText ?? "",
+                style: const TextStyle(fontSize: 13),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      Overlay.of(context).insert(_activeTooltip!);
+    }
+
+    void _toggleTooltip() {
+      if (_activeTooltip != null) {
+        _dismissTooltip();
+      } else {
+        _showTooltip();
+      }
+    }
+
     return CheckboxListTile(
-      title: Text(title),
+      controlAffinity: ListTileControlAffinity.trailing,
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(title),
+          if (infoText != null) ...[
+            const SizedBox(width: 6),
+            GestureDetector(
+              key: iconKey,
+              onTap: _toggleTooltip,
+              child: const Icon(
+                Icons.info_outline,
+                size: 20,
+                color: Colors.red,
+              ),
+            ),
+          ],
+        ],
+      ),
       value: _selectedDietaryPreferences.contains(title),
       onChanged: (bool? value) {
-        _toggleDietaryPreference(title);
+        setState(() {
+          _toggleDietaryPreference(title);
+          _dismissTooltip();
+        });
       },
     );
   }

@@ -24,6 +24,7 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
 
   // Filter
   final List<String> mealTypes = ["Breakfast", "Lunch", "Dinner", "Dessert", "Snack", "Brunch"];
+  final List<String> dietTypes = ["Dairy-Free", "Gluten-Free", "High-Fiber", "High-Protein", "Low-Calorie", "Low-Carb", "Low-Fat", "Low-Sugar", "Vegan", "Vegetarian"];
   List<String> selectedFilters = [];
 
   // Search
@@ -182,11 +183,16 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
       }
       setState(() {
         recipes.addAll(newRecipes);
-        // If no search text, show all
-        if (_searchController.text.isEmpty) {
+
+        final isFiltering = selectedFilters.isNotEmpty;
+        final isSearching = _searchController.text.isNotEmpty;
+
+        // Prevent overwriting filteredRecipes
+        if (!isFiltering && !isSearching) {
           filteredRecipes = List.from(recipes);
         }
       });
+
     } else {
       setState(() {
         _hasMore = false;
@@ -218,101 +224,170 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
   //  FILTER DIALOG
   // ================================
   void _openFilterDialog() {
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (BuildContext context) {
         return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              // Override default padding so there's less space around content
-              contentPadding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 16,
-                bottom: 0,
-              ),
-              actionsPadding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                bottom: 8,
-              ),
-              // No default title property; we place the "Filter by Meal Type" + X button in content
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Top row: Title + round X button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "Filter by Meal Type",
-                        style: TextStyle(fontSize: 20),
-                      ),
-                      // Round X button
-                      Container(
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white, // or any color you want for the background
+          builder: (context, setModalState) {
+            return Padding(
+              padding: MediaQuery.of(context).viewInsets,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Search Filter",
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                         ),
-                        child: IconButton(
+                        IconButton(
                           icon: const Icon(Icons.close, color: Colors.black),
                           onPressed: () => Navigator.pop(context),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
 
-                  const SizedBox(height: 8),
+                    // ===== Meal Filters =====
+                    const Text("Meal", style: TextStyle(fontWeight: FontWeight.w400, fontSize: 18)),
+                    const SizedBox(height: 8),
 
-                  // The list of checkboxes
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: mealTypes.map((mealType) {
-                      return CheckboxListTile(
-                        activeColor: Colors.red,
-                        contentPadding: EdgeInsets.zero, // reduce horizontal space
-                        title: Text(mealType),
-                        value: selectedFilters.contains(mealType),
-                        onChanged: (bool? value) {
-                          setDialogState(() {
-                            if (value == true) {
-                              selectedFilters.add(mealType);
-                            } else {
-                              selectedFilters.remove(mealType);
-                            }
-                          });
-                        },
-                      );
-                    }).toList(),
-                  ),
-                ],
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: mealTypes.map((mealType) {
+                        final isSelected = selectedFilters.contains(mealType);
+                        return ChoiceChip(
+                          showCheckmark: false,
+                          label: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (isSelected) ...[
+                                const Icon(Icons.check, size: 16, color: Colors.white),
+                                const SizedBox(width: 4),
+                              ],
+                              Text(mealType),
+                            ],
+                          ),
+                          selected: isSelected,
+                          onSelected: (bool selected) {
+                            setModalState(() {
+                              if (selected) {
+                                selectedFilters.add(mealType);
+                              } else {
+                                selectedFilters.remove(mealType);
+                              }
+                            });
+                          },
+                          selectedColor: Colors.red,
+                          backgroundColor: Colors.grey.shade100,
+                          side: BorderSide.none,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          labelStyle: TextStyle(
+                            color: isSelected ? Colors.white : Colors.black,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // ===== Diet Filters =====
+                    const Text("Diet", style: TextStyle(fontWeight: FontWeight.w400, fontSize: 18)),
+                    const SizedBox(height: 8),
+
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: dietTypes.map((dietType) {
+                        final isSelected = selectedFilters.contains(dietType);
+                        return ChoiceChip(
+                          showCheckmark: false,
+                          label: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (isSelected) ...[
+                                const Icon(Icons.check, size: 16, color: Colors.white),
+                                const SizedBox(width: 4),
+                              ],
+                              Text(dietType),
+                            ],
+                          ),
+                          selected: isSelected,
+                          onSelected: (bool selected) {
+                            setModalState(() {
+                              if (selected) {
+                                selectedFilters.add(dietType);
+                              } else {
+                                selectedFilters.remove(dietType);
+                              }
+                            });
+                          },
+                          selectedColor: Colors.red,
+                          backgroundColor: Colors.grey.shade100,
+                          side: BorderSide.none,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          labelStyle: TextStyle(
+                            color: isSelected ? Colors.white : Colors.black,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // ===== Buttons =====
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Reset with red outline
+                        OutlinedButton(
+                          onPressed: () {
+                            setState(() {
+                              selectedFilters.clear();
+                              filteredRecipes = List.from(recipes);
+                            });
+                            Navigator.pop(context);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.red),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                          ),
+                          child: const Text(
+                            "Reset",
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                        // Apply button (your custom component)
+                        CustomButton(
+                          text: "Apply",
+                          onPressed: () {
+                            _applyFilter();
+                            Navigator.pop(context);
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      selectedFilters.clear();
-                      filteredRecipes = List.from(recipes);
-                    });
-                    Navigator.pop(context);
-                  },
-                  child: const Text(
-                    "Reset",
-                    style: TextStyle(color: Colors.red),
-                  ),
-                ),
-                CustomButton(
-                  text: "Apply",
-                  onPressed: () {
-                    _applyFilter();
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
             );
           },
         );
@@ -338,54 +413,11 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
     });
   }
 
-  // ================================
-  //  BUILD
-  // ================================
-  @override
-  Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2, // "Recommended" & "All Recipes"
-      child: Scaffold(
-        backgroundColor: Color(0xFFF8F8F8),
-        appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(48), // or your custom height
-          child: AppBar(
-            backgroundColor: Color(0xFFF8F8F8),
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            titleSpacing: 0,
-            bottom: TabBar(
-              tabs: [
-                Tab(text: "Recommended"),
-                Tab(text: "All Recipes"),
-              ],
-              labelColor: Colors.red,
-              // unselectedLabelColor: Colors.grey,
-              indicatorColor: Colors.red,
-              // Here is the overlayColor property that changes the pressed/ripple color:
-              overlayColor: WidgetStateProperty.resolveWith<Color?>(
-                    (Set<WidgetState> states) {
-                  if (states.contains(WidgetState.pressed)) {
-                    // Return your custom pressed color here:
-                    return Colors.grey[100];
-                  }
-                  return null; // default ripple color if not pressed
-                },
-              ),
-            ),
-          ),
-        ),
-        body: TabBarView(
-          children: [
-            // 1) Recommended Tab
-            _buildRecommendedTab(),
-
-            // 2) All Recipes Tab
-            _buildAllRecipesTab(),
-          ],
-        ),
-      ),
-    );
+  void _removeFilter(String filter) {
+    setState(() {
+      selectedFilters.remove(filter);
+      _applyFilter(); // re-apply filter after removing
+    });
   }
 
   // ================================
@@ -514,6 +546,44 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
           ),
         ),
 
+        if (selectedFilters.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: selectedFilters.map((filter) {
+                  return Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    child: Chip(
+                      label: Text(
+                        filter,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      deleteIcon: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.3), // background color of the circle
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                      onDeleted: () => _removeFilter(filter),
+                      backgroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+
         // The recipes grid
         Expanded(
           child: Stack(
@@ -563,6 +633,56 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
           ),
         ),
       ],
+    );
+  }
+
+  // ================================
+  //  BUILD
+  // ================================
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2, // "Recommended" & "All Recipes"
+      child: Scaffold(
+        backgroundColor: Color(0xFFF8F8F8),
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(48), // or your custom height
+          child: AppBar(
+            backgroundColor: Color(0xFFF8F8F8),
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            titleSpacing: 0,
+            bottom: TabBar(
+              tabs: [
+                Tab(text: "Recommended"),
+                Tab(text: "All Recipes"),
+              ],
+              labelColor: Colors.red,
+              // unselectedLabelColor: Colors.grey,
+              indicatorColor: Colors.red,
+              // Here is the overlayColor property that changes the pressed/ripple color:
+              overlayColor: WidgetStateProperty.resolveWith<Color?>(
+                    (Set<WidgetState> states) {
+                  if (states.contains(WidgetState.pressed)) {
+                    // Return your custom pressed color here:
+                    return Colors.grey[100];
+                  }
+                  return null; // default ripple color if not pressed
+                },
+              ),
+            ),
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            // 1) Recommended Tab
+            _buildRecommendedTab(),
+
+            // 2) All Recipes Tab
+            _buildAllRecipesTab(),
+          ],
+        ),
+      ),
     );
   }
 }
