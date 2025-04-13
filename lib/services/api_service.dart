@@ -19,11 +19,17 @@ class ApiService {
 
         // ✅ Overwrite old values with the latest health metrics
         if (latestHealthMetrics != null) {
-          userData["Cholesterol"] = latestHealthMetrics["cholesterol"] ?? userData["cholesterol"];
-          userData["Systolic_BP"] = latestHealthMetrics["systolicBP"] ?? userData["systolicBP"];
-          userData["Diastolic_BP"] = latestHealthMetrics["diastolicBP"] ?? userData["diastolicBP"];
-          userData["Blood_Glucose"] = latestHealthMetrics["bloodGlucose"] ?? userData["bloodGlucose"];
-          userData["Heart_Rate"] = latestHealthMetrics["heartRate"] ?? userData["restingHeartRate"];
+          // userData["Cholesterol"] = latestHealthMetrics["cholesterol"] ?? userData["cholesterol"];
+          // userData["Systolic_BP"] = latestHealthMetrics["systolicBP"] ?? userData["systolicBP"];
+          // userData["Diastolic_BP"] = latestHealthMetrics["diastolicBP"] ?? userData["diastolicBP"];
+          // userData["Blood_Glucose"] = latestHealthMetrics["bloodGlucose"] ?? userData["bloodGlucose"];
+          // userData["Heart_Rate"] = latestHealthMetrics["heartRate"] ?? userData["restingHeartRate"];
+
+          userData["Cholesterol"] = latestHealthMetrics["Cholesterol"] ?? userData["Cholesterol"];
+          userData["Systolic_BP"] = latestHealthMetrics["Systolic_BP"] ?? userData["Systolic_BP"];
+          userData["Diastolic_BP"] = latestHealthMetrics["Diastolic_BP"] ?? userData["Diastolic_BP"];
+          userData["Blood_Glucose"] = latestHealthMetrics["Blood_Glucose"] ?? userData["Blood_Glucose"];
+          userData["Heart_Rate"] = latestHealthMetrics["Heart_Rate"] ?? userData["Heart_Rate"];
         }
 
         // ✅ Debug print to confirm the merged data
@@ -34,22 +40,54 @@ class ApiService {
     return null;
   }
 
-  static Future<Map<String, dynamic>?> fetchLatestHealthMetrics(String userId) async {
-    QuerySnapshot snapshot = await FirebaseFirestore.instance
-        .collection("users")
-        .doc(userId)
-        .collection("healthMetrics")
-        .orderBy("timestamp", descending: true) // Get the latest record
-        .limit(1)
-        .get();
+  // static Future<Map<String, dynamic>?> fetchLatestHealthMetrics(String userId) async {
+  //   QuerySnapshot snapshot = await FirebaseFirestore.instance
+  //       .collection("users")
+  //       .doc(userId)
+  //       .collection("healthMetrics")
+  //       .orderBy("timestamp", descending: true) // Get the latest record
+  //       .limit(1)
+  //       .get();
+  //
+  //   if (snapshot.docs.isNotEmpty) {
+  //     var latestData = snapshot.docs.first.data() as Map<String, dynamic>;
+  //     print("📢 Latest Health Metrics: $latestData"); // Debugging Log
+  //     return latestData;
+  //   }
+  //   print("⚠️ No Health Metrics Found!");
+  //   return null;
+  // }
 
-    if (snapshot.docs.isNotEmpty) {
-      var latestData = snapshot.docs.first.data() as Map<String, dynamic>;
-      print("📢 Latest Health Metrics: $latestData"); // Debugging Log
-      return latestData;
+  static Future<Map<String, dynamic>?> fetchLatestHealthMetrics(String userId) async {
+    final firestore = FirebaseFirestore.instance;
+
+    final metricCollections = {
+      "Cholesterol": "cholesterolMetrics",
+      "Systolic_BP": "systolicbpMetrics",
+      "Diastolic_BP": "diastolicbpMetrics",
+      "Blood_Glucose": "bloodglucoseMetrics",
+      "Heart_Rate": "heartrateMetrics",
+    };
+
+    Map<String, dynamic> latestMetrics = {};
+
+    for (var entry in metricCollections.entries) {
+      final snapshot = await firestore
+          .collection("users")
+          .doc(userId)
+          .collection(entry.value)
+          .orderBy("timestamp", descending: true)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        final value = snapshot.docs.first.data()["value"];
+        latestMetrics[entry.key] = value;
+      }
     }
-    print("⚠️ No Health Metrics Found!");
-    return null;
+
+    print("📢 Latest Individual Health Metrics: $latestMetrics");
+    return latestMetrics;
   }
 
   // ✅ Fetch recommended recipes by meal category using the latest health data
@@ -90,4 +128,3 @@ class ApiService {
     }
   }
 }
-

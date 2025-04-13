@@ -176,30 +176,68 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         "activityLevel": _selectedActivityLevel,
       }, SetOptions(merge: true));
 
-      // Save health metrics
-      String timestamp = DateTime.now().toIso8601String();
-      await firestore.collection("users").doc(user.uid).collection("healthMetrics").doc(timestamp).set({
-        "cholesterol": double.tryParse(_cholesterolController.text.trim()) ?? 0,
-        "systolicBP": double.tryParse(_systolicBPController.text.trim()) ?? 0,
-        "diastolicBP": double.tryParse(_diastolicBPController.text.trim()) ?? 0,
-        "bloodGlucose": double.tryParse(_bloodGlucoseController.text.trim()) ?? 0,
-        "heartRate": double.tryParse(_heartRateController.text.trim()) ?? 0,
-        "timestamp": FieldValue.serverTimestamp(),
-      });
+      // // Save health metrics
+      // String timestamp = DateTime.now().toIso8601String();
+      //
+      // await firestore.collection("users").doc(user.uid).collection("healthMetrics").doc(timestamp).set({
+      //   "cholesterol": double.tryParse(_cholesterolController.text.trim()) ?? 0,
+      //   "systolicBP": double.tryParse(_systolicBPController.text.trim()) ?? 0,
+      //   "diastolicBP": double.tryParse(_diastolicBPController.text.trim()) ?? 0,
+      //   "bloodGlucose": double.tryParse(_bloodGlucoseController.text.trim()) ?? 0,
+      //   "heartRate": double.tryParse(_heartRateController.text.trim()) ?? 0,
+      //   "timestamp": FieldValue.serverTimestamp(),
+      // });
+      //
+      // // 2) Calculate nutrient limits and store them.
+      // // Prepare the user data required for nutrient calculation.
+      // Map<String, dynamic> nutrientData = {
+      //   'weight': _weightController.text.trim(),         // in kg
+      //   'height': _heightController.text.trim(),           // in cm
+      //   'age': _ageController.text.trim(),                 // in years
+      //   'gender': _gender,                                 // "male" or "female"
+      //   'activityLevel': _selectedActivityLevel,           // e.g. "moderately active"
+      //   'cholesterol': _cholesterolController.text.trim(), // in mg/dl
+      //   'systolicBP': _systolicBPController.text.trim(),   // in mmHg
+      //   'diastolicBP': _diastolicBPController.text.trim(), // in mmHg
+      //   'bloodGlucose': _bloodGlucoseController.text.trim(), // in mg/dl
+      //   'heartRate': _heartRateController.text.trim(),     // in bpm
+      // };
 
-      // 2) Calculate nutrient limits and store them.
-      // Prepare the user data required for nutrient calculation.
-      Map<String, dynamic> nutrientData = {
-        'weight': _weightController.text.trim(),         // in kg
-        'height': _heightController.text.trim(),           // in cm
-        'age': _ageController.text.trim(),                 // in years
-        'gender': _gender,                                 // "male" or "female"
-        'activityLevel': _selectedActivityLevel,           // e.g. "moderately active"
-        'cholesterol': _cholesterolController.text.trim(), // in mg/dl
-        'systolicBP': _systolicBPController.text.trim(),   // in mmHg
-        'diastolicBP': _diastolicBPController.text.trim(), // in mmHg
-        'bloodGlucose': _bloodGlucoseController.text.trim(), // in mg/dl
-        'heartRate': _heartRateController.text.trim(),     // in bpm
+      // Save each health metric in its own subcollection
+      final timestamp = DateTime.now().toIso8601String();
+      final serverTime = FieldValue.serverTimestamp();
+
+      final metrics = {
+        "Cholesterol": double.tryParse(_cholesterolController.text.trim()) ?? 0,
+        "SystolicBP": double.tryParse(_systolicBPController.text.trim()) ?? 0,
+        "DiastolicBP": double.tryParse(_diastolicBPController.text.trim()) ?? 0,
+        "BloodGlucose": double.tryParse(_bloodGlucoseController.text.trim()) ?? 0,
+        "HeartRate": double.tryParse(_heartRateController.text.trim()) ?? 0,
+      };
+
+      for (var entry in metrics.entries) {
+        await firestore
+            .collection("users")
+            .doc(user.uid)
+            .collection("${entry.key.toLowerCase()}Metrics")
+            .doc(timestamp)
+            .set({
+          "value": entry.value,
+          "timestamp": serverTime,
+        });
+      }
+
+      final nutrientData = {
+        'weight': _weightController.text.trim(),
+        'height': _heightController.text.trim(),
+        'age': _ageController.text.trim(),
+        'gender': _gender,
+        'activityLevel': _selectedActivityLevel,
+        'cholesterol': _cholesterolController.text.trim(),
+        'systolicBP': _systolicBPController.text.trim(),
+        'diastolicBP': _diastolicBPController.text.trim(),
+        'bloodGlucose': _bloodGlucoseController.text.trim(),
+        'heartRate': _heartRateController.text.trim(),
       };
 
       // Call the nutrient calculation function (from your profile_service.dart)
