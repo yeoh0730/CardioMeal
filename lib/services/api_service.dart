@@ -92,9 +92,11 @@ class ApiService {
 
   // ✅ Fetch recommended recipes by meal category using the latest health data
   static Future<Map<String, List<dynamic>>> fetchMealRecommendations() async {
+    User? user = FirebaseAuth.instance.currentUser;
+
     final userData = await fetchUserData();
-    if (userData == null) {
-      throw Exception("User data not found in Firestore");
+    if (user == null || userData == null) {
+      throw Exception("User or user data not found in Firestore");
     }
 
     final url = Uri.parse("$baseUrl/recommend_meals"); // Endpoint for meal-based recommendations
@@ -103,6 +105,7 @@ class ApiService {
       url,
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
+        "user_id": user.uid,
         "user_metrics": {
           "Weight": userData["weight"] ?? 70,
           "Height": userData["height"] ?? 175,

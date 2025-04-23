@@ -18,6 +18,14 @@ class _DashboardPageState extends State<DashboardPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  final Map<String, Color> metricColors = {
+    "Cholesterol": Colors.deepOrange,
+    "SystolicBP": Colors.orangeAccent,
+    "DiastolicBP": Colors.teal,
+    "BloodGlucose": Colors.blue,
+    "HeartRate": Colors.deepPurpleAccent,
+  };
+
   Map<String, List<FlSpot>> healthData = {
     "Cholesterol": [],
     "SystolicBP": [],
@@ -382,15 +390,15 @@ class _DashboardPageState extends State<DashboardPage> {
                   lineBarsData: [
                     LineChartBarData(
                       isCurved: true,
-                      color: Colors.red,
+                      color: metricColors[metricKey] ?? Colors.red,
                       barWidth: 2,
                       spots: healthData[metricKey]!,
                       belowBarData: BarAreaData(
                         show: true,
                         gradient: LinearGradient(
                           colors: [
-                            Colors.red.withOpacity(0.3),
-                            Colors.red.withOpacity(0.005),
+                            (metricColors[metricKey] ?? Colors.red).withOpacity(0.3),
+                            (metricColors[metricKey] ?? Colors.red).withOpacity(0.005),
                           ],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
