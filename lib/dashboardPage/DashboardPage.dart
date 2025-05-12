@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../services/daily_nutrient_calculation.dart';
+import 'NutrientTrackingPage.dart';
 
 class DashboardPage extends StatefulWidget {
   @override
@@ -497,15 +498,6 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildNutrientTab() {
-    return const Center(
-      child: Text(
-        "Nutrient tracking coming soon!",
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -530,7 +522,7 @@ class _DashboardPageState extends State<DashboardPage> {
         body: TabBarView(
           children: [
             _buildHealthProgressTab(),
-            _buildNutrientTab(),
+            const NutrientTab(),
           ],
         ),
       ),

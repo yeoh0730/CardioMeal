@@ -455,7 +455,7 @@ class _DiaryPageState extends State<DiaryPage> {
                               child: Container(
                                 height: 10,
                                 decoration: BoxDecoration(
-                                  color: Colors.orange,
+                                  color: Colors.blue.shade400,
                                   borderRadius: BorderRadius.circular(20), // fully rounded ends
                                 ),
                               ),
@@ -521,7 +521,7 @@ class _DiaryPageState extends State<DiaryPage> {
                               child: Container(
                                 height: 10,
                                 decoration: BoxDecoration(
-                                  color: Colors.blue,
+                                  color: Colors.purple.shade400,
                                   borderRadius: BorderRadius.circular(20), // fully rounded ends
                                 ),
                               ),
@@ -587,7 +587,7 @@ class _DiaryPageState extends State<DiaryPage> {
                               child: Container(
                                 height: 10,
                                 decoration: BoxDecoration(
-                                  color: Colors.purple,
+                                  color: Colors.yellow.shade400,
                                   borderRadius: BorderRadius.circular(20), // fully rounded ends
                                 ),
                               ),
