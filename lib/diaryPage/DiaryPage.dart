@@ -396,7 +396,7 @@ class _DiaryPageState extends State<DiaryPage> {
             lineWidth: 12,
             percent: (consumed / dailyGoal).clamp(0, 1),
             backgroundColor: Colors.grey[200]!,
-            progressColor: Colors.red,
+            progressColor: Colors.red.shade400,
             circularStrokeCap: CircularStrokeCap.round,
             center: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -587,7 +587,7 @@ class _DiaryPageState extends State<DiaryPage> {
                               child: Container(
                                 height: 10,
                                 decoration: BoxDecoration(
-                                  color: Colors.yellow.shade400,
+                                  color: Colors.orange.shade400,
                                   borderRadius: BorderRadius.circular(20), // fully rounded ends
                                 ),
                               ),

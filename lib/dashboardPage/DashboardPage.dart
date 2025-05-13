@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../services/daily_nutrient_calculation.dart';
 import 'NutrientTrackingPage.dart';
+import 'dart:math';
 
 class DashboardPage extends StatefulWidget {
   @override
@@ -332,7 +333,21 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildMetricGraph(String title, String metricKey) {
+    final List<FlSpot> spots = healthData[metricKey] ?? [];
     final List<DateTime> dates = _metricDateMap[metricKey] ?? [];
+    final bool hasData = spots.isNotEmpty;
+
+    // Dynamic Y-axis range
+    double minY = 0;
+    double maxY = 100; // default if no data
+
+    if (hasData) {
+      final double peak = spots.map((s) => s.y).reduce(max);
+      final double floor = spots.map((s) => s.y).reduce(min);
+      minY = floor;
+      maxY = peak;
+      if (minY < 0) minY = 0;
+    }
 
     return Card(
       color: Colors.white,
@@ -346,7 +361,7 @@ class _DashboardPageState extends State<DashboardPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                // Optional: Title can be added here
                 Container(
                   width: 30,
                   height: 30,
@@ -364,14 +379,32 @@ class _DashboardPageState extends State<DashboardPage> {
               height: 200,
               child: LineChart(
                 LineChartData(
-                  gridData: FlGridData(show: true),
-                  borderData: FlBorderData(show: false),
+                  minY: minY,
+                  maxY: maxY,
+                  gridData: FlGridData(
+                    show: false,
+                    drawVerticalLine: false,
+                    drawHorizontalLine: false,
+                    horizontalInterval: hasData ? ((maxY - minY) / 4).clamp(1, double.infinity) : 20,
+                    verticalInterval: 1,
+                    getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.withOpacity(0.2), strokeWidth: 1),
+                    getDrawingVerticalLine: (value) => FlLine(color: Colors.grey.withOpacity(0.2), strokeWidth: 1),
+                  ),
+                  borderData: FlBorderData(
+                    show: true,
+                    border: const Border(
+                      left: BorderSide(color: Colors.grey, width: 1),  // Y-axis
+                      bottom: BorderSide(color: Colors.grey, width: 1), // X-axis
+                    ),
+                  ),
                   titlesData: FlTitlesData(
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
-                        reservedSize: 40,
-                        getTitlesWidget: (value, _) => Text(value.toInt().toString(), style: const TextStyle(fontSize: 10)),
+                        reservedSize: 24,
+                        interval: hasData ? ((maxY - minY) / 4).clamp(1, double.infinity) : 20,
+                        getTitlesWidget: (value, _) =>
+                            Text(value.toInt().toString(), style: const TextStyle(fontSize: 10)),
                       ),
                     ),
                     bottomTitles: AxisTitles(
@@ -381,21 +414,51 @@ class _DashboardPageState extends State<DashboardPage> {
                         getTitlesWidget: (value, _) {
                           int index = value.toInt();
                           if (index < 0 || index >= dates.length) return const SizedBox.shrink();
-                          return Text(DateFormat('MM/dd').format(dates[index]), style: const TextStyle(fontSize: 10));
+                          return Text(DateFormat('dd/MM').format(dates[index]), style: const TextStyle(fontSize: 10));
                         },
                       ),
                     ),
                     topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   ),
+                  lineTouchData: LineTouchData(
+                    enabled: hasData,
+                    touchTooltipData: LineTouchTooltipData(
+                      getTooltipColor: (LineBarSpot touchedSpot) {
+                        // Customize the tooltip background color based on the y-value
+                        if (touchedSpot.y < 50) {
+                          return Colors.green;
+                        } else if (touchedSpot.y < 100) {
+                          return Colors.orange;
+                        } else {
+                          return Colors.grey.shade100;
+                        }
+                      },
+                      tooltipRoundedRadius: 8,
+                      tooltipPadding: const EdgeInsets.all(8),
+                      tooltipBorder: BorderSide.none,
+                      getTooltipItems: (List<LineBarSpot> touchedSpots) {
+                        return touchedSpots.map((spot) {
+                          return LineTooltipItem(
+                            '${spot.y.toStringAsFixed(1)}',
+                            const TextStyle(
+                              color: Colors.black,
+                              fontSize: 12,
+                            ),
+                          );
+                        }).toList();
+                      },
+                    ),
+                  ),
                   lineBarsData: [
                     LineChartBarData(
                       isCurved: true,
                       color: metricColors[metricKey] ?? Colors.red,
                       barWidth: 2,
-                      spots: healthData[metricKey]!,
+                      spots: spots,
+                      dotData: FlDotData(show: hasData),
                       belowBarData: BarAreaData(
-                        show: true,
+                        show: hasData,
                         gradient: LinearGradient(
                           colors: [
                             (metricColors[metricKey] ?? Colors.red).withOpacity(0.3),
@@ -416,9 +479,94 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  // Widget _buildMetricGraph(String title, String metricKey) {
+  //   final List<DateTime> dates = _metricDateMap[metricKey] ?? [];
+  //
+  //   return Card(
+  //     color: Colors.white,
+  //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+  //     elevation: 2,
+  //     child: Padding(
+  //       padding: const EdgeInsets.all(12.0),
+  //       child: Column(
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         children: [
+  //           Row(
+  //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //             children: [
+  //               // Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+  //               Container(
+  //                 width: 30,
+  //                 height: 30,
+  //                 decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+  //                 child: IconButton(
+  //                   padding: EdgeInsets.zero,
+  //                   icon: const Icon(Icons.add, size: 18, color: Colors.white),
+  //                   onPressed: () => _showSingleMetricDialog(metricKey),
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //           const SizedBox(height: 20),
+  //           SizedBox(
+  //             height: 200,
+  //             child: LineChart(
+  //               LineChartData(
+  //                 gridData: FlGridData(show: false),
+  //                 borderData: FlBorderData(show: false),
+  //                 titlesData: FlTitlesData(
+  //                   leftTitles: AxisTitles(
+  //                     sideTitles: SideTitles(
+  //                       showTitles: true,
+  //                       reservedSize: 40,
+  //                       getTitlesWidget: (value, _) => Text(value.toInt().toString(), style: const TextStyle(fontSize: 10)),
+  //                     ),
+  //                   ),
+  //                   bottomTitles: AxisTitles(
+  //                     sideTitles: SideTitles(
+  //                       showTitles: true,
+  //                       interval: 1,
+  //                       getTitlesWidget: (value, _) {
+  //                         int index = value.toInt();
+  //                         if (index < 0 || index >= dates.length) return const SizedBox.shrink();
+  //                         return Text(DateFormat('dd/MM').format(dates[index]), style: const TextStyle(fontSize: 10));
+  //                       },
+  //                     ),
+  //                   ),
+  //                   topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+  //                   rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+  //                 ),
+  //                 lineBarsData: [
+  //                   LineChartBarData(
+  //                     isCurved: true,
+  //                     color: metricColors[metricKey] ?? Colors.red,
+  //                     barWidth: 2,
+  //                     spots: healthData[metricKey]!,
+  //                     belowBarData: BarAreaData(
+  //                       show: true,
+  //                       gradient: LinearGradient(
+  //                         colors: [
+  //                           (metricColors[metricKey] ?? Colors.red).withOpacity(0.3),
+  //                           (metricColors[metricKey] ?? Colors.red).withOpacity(0.005),
+  //                         ],
+  //                         begin: Alignment.topCenter,
+  //                         end: Alignment.bottomCenter,
+  //                       ),
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
+
   Widget _buildDateFilterBar() {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
+      padding: const EdgeInsets.only(bottom: 10.0),
       child: InkWell(
         onTap: _selectDateRange,
         borderRadius: BorderRadius.circular(12),
@@ -468,9 +616,10 @@ class _DashboardPageState extends State<DashboardPage> {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: _isChartLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: Colors.red))
           : SingleChildScrollView(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildDateFilterBar(),
             // Row(
@@ -483,14 +632,25 @@ class _DashboardPageState extends State<DashboardPage> {
             //     ),
             //   ],
             // ),
+            const SizedBox(height: 8),
+            const Text("Cholesterol (mg/dl)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
             _buildMetricGraph("Cholesterol (mg/dl)", "Cholesterol"),
             const SizedBox(height: 16),
+            const Text("Systolic BP (mmHg)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
             _buildMetricGraph("Systolic BP (mmHg)", "SystolicBP"),
             const SizedBox(height: 16),
+            const Text("Diastolic BP (mmHg)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
             _buildMetricGraph("Diastolic BP (mmHg)", "DiastolicBP"),
             const SizedBox(height: 16),
+            const Text("Blood Glucose (mg/dl)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
             _buildMetricGraph("Blood Glucose (mg/dl)", "BloodGlucose"),
             const SizedBox(height: 16),
+            const Text("Resting Heart Rate (bpm)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
             _buildMetricGraph("Resting Heart Rate (bpm)", "HeartRate"),
           ],
         ),
@@ -516,6 +676,15 @@ class _DashboardPageState extends State<DashboardPage> {
               ],
               labelColor: Colors.red,
               indicatorColor: Colors.red,
+              overlayColor: WidgetStateProperty.resolveWith<Color?>(
+                    (Set<WidgetState> states) {
+                  if (states.contains(WidgetState.pressed)) {
+                    // Return your custom pressed color here:
+                    return Colors.grey[100];
+                  }
+                  return null; // default ripple color if not pressed
+                },
+              ),
             ),
           ),
         ),

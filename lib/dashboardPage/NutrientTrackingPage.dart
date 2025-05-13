@@ -6,8 +6,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
 import 'dart:ui' as ui;
 
-
-
 class NutrientTab extends StatefulWidget {
   const NutrientTab({super.key});
 
@@ -16,6 +14,8 @@ class NutrientTab extends StatefulWidget {
 }
 
 class _NutrientTabState extends State<NutrientTab> {
+  bool _isLoading = true;
+
   DateTimeRange _selectedRange = DateTimeRange(
     start: DateTime.now().subtract(const Duration(days: 6)),
     end: DateTime.now(),
@@ -27,10 +27,15 @@ class _NutrientTabState extends State<NutrientTab> {
   }
 
   List<FlSpot> _calorieSpots = [];
+  List<FlSpot> carbSpots = [];
+  List<FlSpot> sodiumSpots = [];
+  List<FlSpot> rawSodiumSpots = []; // mg
+  List<FlSpot> fatSpots = [];
   double carbs = 0;
   double sodium = 0;
   double fat = 0;
 
+  double calorieGoal = 0;
   double carbLimit = 0;
   double sodiumLimit = 0;
   double fatLimit = 0;
@@ -47,6 +52,42 @@ class _NutrientTabState extends State<NutrientTab> {
       initialDateRange: _selectedRange,
       firstDate: DateTime(2022),
       lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            dialogBackgroundColor: Colors.white,
+            scaffoldBackgroundColor: Colors.white,
+            colorScheme: const ColorScheme.light(
+              primary: Colors.red,       // Header and selected dates
+              onPrimary: Colors.white,   // Text on selected date
+              onSurface: Colors.black,   // Default text color
+              surface: Colors.white,     // Month/year row background
+            ),
+            datePickerTheme: DatePickerThemeData(
+              backgroundColor: Colors.white,
+              headerBackgroundColor: Colors.white,
+              rangeSelectionBackgroundColor: Colors.red.withOpacity(0.2),
+              todayBackgroundColor: WidgetStateProperty.all(Colors.red.shade100),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24), // Rounded corners
+              ),
+              dayStyle: TextStyle(
+                fontWeight: FontWeight.normal,
+                color: Colors.black,
+              ),
+              rangePickerHeaderHeadlineStyle: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: Colors.black,
+              ),
+              rangePickerHeaderHelpStyle: const TextStyle(
+                color: Colors.black54,
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null) {
       setState(() {
@@ -57,6 +98,10 @@ class _NutrientTabState extends State<NutrientTab> {
   }
 
   Future<void> _fetchData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -65,6 +110,11 @@ class _NutrientTabState extends State<NutrientTab> {
     final firestore = FirebaseFirestore.instance;
 
     List<FlSpot> spots = [];
+    carbSpots.clear();
+    sodiumSpots.clear();
+    rawSodiumSpots.clear();
+    fatSpots.clear();
+
     double totalCarbs = 0;
     double totalSodium = 0;
     double totalFat = 0;
@@ -100,6 +150,10 @@ class _NutrientTabState extends State<NutrientTab> {
       totalFat += dailyFat;
 
       spots.add(FlSpot(i.toDouble(), dailyCalories));
+      carbSpots.add(FlSpot(i.toDouble(), dailyCarbs));
+      sodiumSpots.add(FlSpot(i.toDouble(), dailySodium / 1000));
+      rawSodiumSpots.add(FlSpot(i.toDouble(), dailySodium)); // in mg
+      fatSpots.add(FlSpot(i.toDouble(), dailyFat));
     }
 
     final goalSnap = await firestore
@@ -112,6 +166,7 @@ class _NutrientTabState extends State<NutrientTab> {
 
     if (goalSnap.docs.isNotEmpty) {
       final data = goalSnap.docs.first.data();
+      calorieGoal = (data['dailyCalories'] ?? 2500).toDouble();
       carbLimit = (data['carbLimit'] ?? 0).toDouble();
       sodiumLimit = (data['sodiumLimit'] ?? 0).toDouble() / 1000;
       fatLimit = (data['fatLimit'] ?? 0).toDouble();
@@ -122,66 +177,13 @@ class _NutrientTabState extends State<NutrientTab> {
       carbs = totalCarbs;
       sodium = totalSodium;
       fat = totalFat;
+      _isLoading = false;
     });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final dates = _selectedDates;
-    final dateFormat = DateFormat('MM/dd');
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildDateFilterBar(),
-          _buildCalorieChart(dateFormat, dates),
-          const SizedBox(height: 16),
-          Card(
-            color: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            elevation: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("Macronutrients Consumption", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    height: 200,
-                    width: double.infinity,
-                    child: CustomPaint(
-                      painter: DualRingPieChartPainter(
-                        consumed: [carbs, sodium, fat],
-                        goals: [carbLimit, sodiumLimit, fatLimit],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 35),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      _LegendDot(color: Colors.blue, label: "carbs"),
-                      SizedBox(width: 16),
-                      _LegendDot(color: Colors.purple, label: "sodium"),
-                      SizedBox(width: 16),
-                      _LegendDot(color: Colors.yellow, label: "fat"),
-                    ],
-                  )
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildDateFilterBar() {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.only(bottom: 10),
       child: InkWell(
         onTap: _pickDateRange,
         borderRadius: BorderRadius.circular(12),
@@ -222,6 +224,27 @@ class _NutrientTabState extends State<NutrientTab> {
   }
 
   Widget _buildCalorieChart(DateFormat dateFormat, List<DateTime> dates) {
+    double maxCalorieY = max(
+      _calorieSpots.map((e) => e.y).reduce(max) * 1.2,
+      calorieGoal * 1.1,
+    );
+
+    double interval = maxCalorieY > 3000
+        ? 500
+        : maxCalorieY > 1500
+        ? 300
+        : maxCalorieY > 1000
+        ? 100
+        : maxCalorieY > 500
+        ? 50
+        : maxCalorieY > 100
+        ? 30
+        : maxCalorieY > 50
+        ? 10
+        : 5;
+
+    int dateLabelInterval = dates.length > 7 ? (dates.length / 7).ceil() : 1;
+
     return Card(
       color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -231,32 +254,87 @@ class _NutrientTabState extends State<NutrientTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Calorie Intake", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
             SizedBox(
               height: 200,
               child: LineChart(
                 LineChartData(
-                  borderData: FlBorderData(show: false),
-                  gridData: FlGridData(show: true),
+                  maxY: maxCalorieY,
+                  minY: 0,
+                  borderData: FlBorderData(
+                    show: true,
+                    border: const Border(
+                      left: BorderSide(color: Colors.grey, width: 1),  // Y-axis
+                      bottom: BorderSide(color: Colors.grey, width: 1), // X-axis
+                    ),
+                  ),
+                  gridData: FlGridData(show: false),
                   titlesData: FlTitlesData(
                     leftTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: true, reservedSize: 40),
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 27,
+                        interval: interval,
+                        getTitlesWidget: (value, _) {
+                          if (value % interval != 0) return const SizedBox.shrink();
+                          return Text(
+                            value.toInt().toString(),
+                            style: const TextStyle(fontSize: 10),
+                          );
+                        },
+                      ),
                     ),
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
-                        interval: 1,
+                        interval: dateLabelInterval.toDouble(),
                         getTitlesWidget: (value, _) {
                           int index = value.toInt();
                           if (index < 0 || index >= dates.length) return const SizedBox.shrink();
-                          return Text(dateFormat.format(dates[index]), style: const TextStyle(fontSize: 10));
+                          if (index % dateLabelInterval != 0) return const SizedBox.shrink();
+                          return Text(
+                            DateFormat('dd/MM').format(dates[index]),
+                            style: const TextStyle(fontSize: 10),
+                          );
                         },
                       ),
                     ),
                     topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   ),
+                  lineTouchData: LineTouchData(
+                    enabled: true,
+                    touchTooltipData: LineTouchTooltipData(
+                      getTooltipColor: (LineBarSpot spot) => Colors.red.shade100,
+                      tooltipRoundedRadius: 8,
+                      tooltipPadding: const EdgeInsets.all(8),
+                      tooltipBorder: BorderSide.none,
+                      getTooltipItems: (List<LineBarSpot> touchedSpots) {
+                        return touchedSpots.map((spot) {
+                          return LineTooltipItem(
+                            '${spot.y.toStringAsFixed(1)} kcal',
+                            const TextStyle(
+                              color: Colors.black,
+                              fontSize: 12,
+                            ),
+                          );
+                        }).toList();
+                      },
+                    ),
+                  ),
+                  extraLinesData: ExtraLinesData(horizontalLines: [
+                    HorizontalLine(
+                      y: calorieGoal,
+                      color: Colors.grey,
+                      strokeWidth: 1.5,
+                      dashArray: [6, 4],
+                      label: HorizontalLineLabel(
+                        show: true,
+                        labelResolver: (_) => "${calorieGoal.toStringAsFixed(0)} kcal",
+                        style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold),
+                        alignment: Alignment.topRight,
+                      ),
+                    )
+                  ]),
                   lineBarsData: [
                     LineChartBarData(
                       isCurved: true,
@@ -271,6 +349,264 @@ class _NutrientTabState extends State<NutrientTab> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildNutrientLineChart({
+    required String label,
+    required List<FlSpot> dataSpots,
+    required double goalValue,
+    required Color lineColor,
+    required Color goalLineColor,
+    required List<DateTime> dates,
+  }) {
+    double maxY = [
+      goalValue,
+      ...dataSpots.map((s) => s.y),
+    ].reduce((a, b) => a > b ? a : b) * 1.2;
+
+    int dateLabelInterval = dates.length > 7 ? (dates.length / 7).ceil() : 1;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Card(
+        color: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        elevation: 2,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Text(label, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 260,
+                child: LineChart(
+                  LineChartData(
+                    maxY: maxY,
+                    minY: 0,
+                    gridData: FlGridData(show: false),
+                    borderData: FlBorderData(
+                      show: true,
+                      border: const Border(
+                        left: BorderSide(color: Colors.grey, width: 1),  // Y-axis
+                        bottom: BorderSide(color: Colors.grey, width: 1), // X-axis
+                      ),
+                    ),
+                    lineBarsData: [
+                      LineChartBarData(
+                        isCurved: true,
+                        spots: dataSpots,
+                        color: lineColor,
+                        barWidth: 2,
+                        dotData: FlDotData(show: true),
+                      ),
+                    ],
+                    extraLinesData: ExtraLinesData(horizontalLines: [
+                      HorizontalLine(
+                        y: goalValue,
+                        color: goalLineColor,
+                        strokeWidth: 1.5,
+                        dashArray: [6, 4],
+                        label: HorizontalLineLabel(
+                          show: true,
+                          labelResolver: (_) {
+                            final isSodium = label.toLowerCase() == "sodium";
+                            final unit = isSodium ? "mg" : "g";
+                            return "${goalValue.toStringAsFixed(0)} $unit";
+                          },
+                          style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold),
+                          alignment: Alignment.topRight,
+                        ),
+                      )
+                    ]),
+                    lineTouchData: LineTouchData(
+                      enabled: true,
+                      touchTooltipData: LineTouchTooltipData(
+                        getTooltipColor: (LineBarSpot spot) {
+                          if (label.toLowerCase().contains("carbs")) return Colors.blue.shade100;
+                          if (label.toLowerCase().contains("sodium")) return Colors.purple.shade100;
+                          if (label.toLowerCase().contains("fat")) return Colors.orange.shade100;
+                          return Colors.grey.shade800;
+                        },
+                        tooltipRoundedRadius: 8,
+                        tooltipPadding: const EdgeInsets.all(8),
+                        tooltipBorder: BorderSide.none,
+                        getTooltipItems: (List<LineBarSpot> touchedSpots) {
+                          return touchedSpots.map((spot) {
+                            return LineTooltipItem(
+                              '${spot.y.toStringAsFixed(1)}',
+                              const TextStyle(
+                                color: Colors.black,
+                                fontSize: 12,
+                              ),
+                            );
+                          }).toList();
+                        },
+                      ),
+                    ),
+                    titlesData: FlTitlesData(
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 30,
+                          interval: dateLabelInterval.toDouble(),
+                          getTitlesWidget: (value, _) {
+                            int index = value.toInt();
+                            if (index < 0 || index >= dates.length) return const SizedBox.shrink();
+                            if (index % dateLabelInterval != 0) return const SizedBox.shrink();
+                            return Text(
+                              DateFormat('dd/MM').format(dates[index]),
+                              style: const TextStyle(fontSize: 10),
+                            );
+                          },
+                        ),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 32,
+                          interval: maxY > 3000
+                              ? 500
+                              : maxY > 1500
+                              ? 300
+                              : maxY > 1000
+                              ? 100
+                              : maxY > 500
+                              ? 50
+                              : maxY > 100
+                              ? 30
+                              : maxY > 70
+                              ? 10
+                              : 5,
+                          getTitlesWidget: (value, _) {
+                            double interval = maxY > 3000
+                                ? 500
+                                : maxY > 1500
+                                ? 300
+                                : maxY > 1000
+                                ? 100
+                                : maxY > 500
+                                ? 50
+                                : maxY > 100
+                                ? 30
+                                : maxY > 70
+                                ? 10
+                                : 5;
+
+                            if (value % interval != 0) return const SizedBox.shrink();
+
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 4),
+                              child: Text(
+                                value.toInt().toString(),
+                                style: const TextStyle(fontSize: 10),
+                                textAlign: TextAlign.right,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dates = _selectedDates;
+    final dateFormat = DateFormat('MM/dd');
+    return _isLoading
+        ? const Center(child: CircularProgressIndicator(color: Colors.red))
+        : SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildDateFilterBar(),
+          const SizedBox(height: 16),
+          const Text("Calorie Intake (kcal)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          _buildCalorieChart(dateFormat, dates),
+          const SizedBox(height: 16),
+          const Text("Nutrient Breakdown (%)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Card(
+            color: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: 200,
+                    width: double.infinity,
+                    child: CustomPaint(
+                      painter: DualRingPieChartPainter(
+                        consumed: [carbs, sodium, fat],
+                        goals: [carbLimit, sodiumLimit, fatLimit],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 35),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      _LegendDot(color: Colors.blue, label: "Carbs"),
+                      SizedBox(width: 16),
+                      _LegendDot(color: Colors.purple, label: "Sodium"),
+                      SizedBox(width: 16),
+                      _LegendDot(color: Colors.orange, label: "Fat"),
+                    ],
+                  )
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text("Carbs Intake (g)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          _buildNutrientLineChart(
+            label: "Carbs",
+            dataSpots: carbSpots,
+            goalValue: carbLimit,
+            lineColor: Colors.blue,
+            goalLineColor: Colors.grey,
+            dates: _selectedDates,
+          ),
+          const SizedBox(height: 16),
+          const Text("Sodium Intake (mg)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          _buildNutrientLineChart(
+            label: "Sodium",
+            dataSpots: rawSodiumSpots,
+            goalValue: sodiumLimit * 1000, // Convert goal (g) back to mg for display
+            lineColor: Colors.purple,
+            goalLineColor: Colors.grey,
+            dates: _selectedDates,
+          ),
+          const SizedBox(height: 16),
+          const Text("Fat Intake (g)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          _buildNutrientLineChart(
+            label: "Fat",
+            dataSpots: fatSpots,
+            goalValue: fatLimit,
+            lineColor: Colors.orange,
+            goalLineColor: Colors.grey,
+            dates: _selectedDates,
+          ),
+        ],
       ),
     );
   }
@@ -308,7 +644,7 @@ class DualRingPieChartPainter extends CustomPainter {
     final outerThickness = 30.0;
     final innerThickness = 30.0;
 
-    final colors = [Colors.blue.shade400, Colors.purple.shade400, Colors.yellow.shade400];
+    final colors = [Colors.blue.shade400, Colors.purple.shade400, Colors.orange.shade400];
     final totalConsumed = consumed.fold(0.0, (a, b) => a + b);
     final totalGoal = goals.fold(0.0, (a, b) => a + b);
 
