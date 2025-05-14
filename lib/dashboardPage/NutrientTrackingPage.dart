@@ -637,6 +637,26 @@ class DualRingPieChartPainter extends CustomPainter {
   DualRingPieChartPainter({required this.consumed, required this.goals});
 
   @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  void _drawText(Canvas canvas, String text, Offset offset,
+      {double fontSize = 11, Color color = Colors.black}) {
+    final span = TextSpan(
+      text: text,
+      style: TextStyle(
+          fontSize: fontSize, color: color, fontWeight: FontWeight.w500),
+    );
+    final tp = TextPainter(
+      text: span,
+      textAlign: TextAlign.center,
+      textDirection: ui.TextDirection.ltr,
+    );
+    tp.layout();
+    canvas.save();
+    canvas.translate(offset.dx - tp.width / 2, offset.dy - tp.height / 2);
+    tp.paint(canvas, Offset.zero);
+    canvas.restore();
+  }
+
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final outerRadius = min(size.width, size.height) / 2 - 8;
@@ -644,36 +664,43 @@ class DualRingPieChartPainter extends CustomPainter {
     final outerThickness = 30.0;
     final innerThickness = 30.0;
 
-    final colors = [Colors.blue.shade400, Colors.purple.shade400, Colors.orange.shade400];
+    final colors = [
+      Colors.blue.shade400,
+      Colors.purple.shade400,
+      Colors.orange.shade400
+    ];
     final totalConsumed = consumed.fold(0.0, (a, b) => a + b);
+    final hasConsumption = totalConsumed > 0;
     final totalGoal = goals.fold(0.0, (a, b) => a + b);
 
     // Draw outer ring (consumed)
-    double consumedStart = -pi / 2;
-    for (int i = 0; i < consumed.length; i++) {
-      final sweep = (consumed[i] / totalConsumed) * 2 * pi;
-      final paint = Paint()
-        ..color = colors[i].withOpacity(0.85)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = outerThickness;
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: outerRadius),
-        consumedStart,
-        sweep,
-        false,
-        paint,
-      );
+    if (hasConsumption) {
+      double consumedStart = -pi / 2;
+      for (int i = 0; i < consumed.length; i++) {
+        final sweep = (consumed[i] / totalConsumed) * 2 * pi;
+        final paint = Paint()
+          ..color = colors[i].withOpacity(0.85)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = outerThickness;
+        canvas.drawArc(
+          Rect.fromCircle(center: center, radius: outerRadius),
+          consumedStart,
+          sweep,
+          false,
+          paint,
+        );
 
-      // Draw percentage text
-      final percent = (consumed[i] / totalConsumed * 100).round();
-      final angle = consumedStart + sweep / 2;
-      final labelPos = Offset(
-        center.dx + cos(angle) * (outerRadius),
-        center.dy + sin(angle) * (outerRadius),
-      );
-      _drawText(canvas, '$percent%', labelPos);
+        // Draw percentage text
+        final percent = (consumed[i] / totalConsumed * 100).round();
+        final angle = consumedStart + sweep / 2;
+        final labelPos = Offset(
+          center.dx + cos(angle) * (outerRadius),
+          center.dy + sin(angle) * (outerRadius),
+        );
+        _drawText(canvas, '$percent%', labelPos);
 
-      consumedStart += sweep;
+        consumedStart += sweep;
+      }
     }
 
     // Draw inner ring (goal)
@@ -699,7 +726,8 @@ class DualRingPieChartPainter extends CustomPainter {
         center.dx + cos(angle) * (innerRadius),
         center.dy + sin(angle) * (innerRadius),
       );
-      _drawText(canvas, '$percent%', labelPos, fontSize: 10, color: Colors.black87);
+      _drawText(
+          canvas, '$percent%', labelPos, fontSize: 10, color: Colors.black87);
 
       goalStart += sweep;
     }
@@ -707,7 +735,8 @@ class DualRingPieChartPainter extends CustomPainter {
     // Draw center label
     final centerText = TextSpan(
       text: 'My goal',
-      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
+      style: const TextStyle(
+          fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
     );
     final textPainter = TextPainter(
       text: centerText,
@@ -715,47 +744,31 @@ class DualRingPieChartPainter extends CustomPainter {
       textDirection: ui.TextDirection.ltr,
     );
     textPainter.layout(minWidth: 0, maxWidth: size.width);
-    final offset = center - Offset(textPainter.width / 2, textPainter.height / 2);
+    final offset = center -
+        Offset(textPainter.width / 2, textPainter.height / 2);
     textPainter.paint(canvas, offset);
 
     // ===== Bottom Text: My consumption =====
-    final consumptionText = TextSpan(
-      text: 'My consumption',
-      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey),
-    );
-    final consumptionPainter = TextPainter(
-      text: consumptionText,
-      textAlign: TextAlign.center,
-      textDirection: ui.TextDirection.ltr,
-    );
-    consumptionPainter.layout();
-    final consumptionOffset = Offset(
-      center.dx - consumptionPainter.width / 2,
-      center.dy + outerRadius + 20, // ⬅️ was 10, now moved lower
-    );
-    consumptionPainter.paint(canvas, consumptionOffset);
-  }
+    if (hasConsumption) {
+      final consumptionText = TextSpan(
+        text: 'My consumption',
+        style: const TextStyle(
+            fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey),
+      );
+      final consumptionPainter = TextPainter(
+        text: consumptionText,
+        textAlign: TextAlign.center,
+        textDirection: ui.TextDirection.ltr,
+      );
+      consumptionPainter.layout();
+      final consumptionOffset = Offset(
+        center.dx - consumptionPainter.width / 2,
+        center.dy + outerRadius + 20,
+      );
+      consumptionPainter.paint(canvas, consumptionOffset);
+    }
 
-  void _drawText(Canvas canvas, String text, Offset offset,
-      {double fontSize = 11, Color color = Colors.black}) {
-    final span = TextSpan(
-      text: text,
-      style: TextStyle(fontSize: fontSize, color: color, fontWeight: FontWeight.w500),
-    );
-    final tp = TextPainter(
-      text: span,
-      textAlign: TextAlign.center,
-      textDirection: ui.TextDirection.ltr,
-    );
-    tp.layout();
-    canvas.save();
-    canvas.translate(offset.dx - tp.width / 2, offset.dy - tp.height / 2);
-    tp.paint(canvas, Offset.zero);
-    canvas.restore();
+    @override
+    bool shouldRepaint(CustomPainter oldDelegate) => true;
   }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => true;
 }
-
-

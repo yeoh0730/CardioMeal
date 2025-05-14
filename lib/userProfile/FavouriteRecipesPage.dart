@@ -174,7 +174,7 @@ class _FavoriteRecipesPageState extends State<FavoriteRecipesPage> {
                   ),
 
                 const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
                   child: Text(
                     "You may also like",
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),

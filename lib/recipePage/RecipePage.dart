@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project/recipePage/CategoryRecipesPage.dart';
 import '../models/custom_button.dart';
 import '../services/api_service.dart';
 import '../models/recipe_card.dart';
@@ -395,7 +396,6 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
     );
   }
 
-
   void _applyFilter() {
     if (selectedFilters.isEmpty) {
       setState(() {
@@ -445,10 +445,39 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Category Title
-            Text(
-              category,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            // Category Title + More Button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    category,
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CategoryRecipesPage(
+                            categoryTitle: category,
+                            recipes: categoryList, category: '',
+                          ),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      "More >",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.red,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 8),
 
@@ -461,17 +490,17 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
                 itemBuilder: (context, index) {
                   final recipe = categoryList[index];
                   final recipeId = (recipe["RecipeId"] ?? "").toString();
-                  bool isFavorited = userFavorites.contains(recipeId);
-                  // Optionally remove right margin for the last item
+                  final isFavorited = userFavorites.contains(recipeId);
                   final isLast = (index == categoryList.length - 1);
+
                   return Container(
                     width: 160,
                     margin: EdgeInsets.only(right: isLast ? 0 : 8),
                     child: RecipeCard(
                       title: recipe["Name"] ?? "No Name",
-                      totalTime: recipe["TotalTime"] ?? "N/A",
+                      totalTime: recipe["TotalTime"]?.toString() ?? "N/A",
                       imageUrl: recipe["Images"] ?? "",
-                      recipeId: (recipe["RecipeId"] ?? "").toString(),
+                      recipeId: recipeId,
                       isFavorited: isFavorited,
                       onFavoriteTap: () => _toggleFavorite(recipeId),
                       onCardTap: () async {
@@ -480,20 +509,20 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
                           '/recipeDetail',
                           arguments: recipeId,
                         );
-                        // When coming back, reload the favorites.
-                        _loadUserFavorites();
+                        _loadUserFavorites(); // Refresh after returning
                       },
                     ),
                   );
                 },
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
           ],
         );
       }).toList(),
     );
   }
+
 
   // ================================
   //  ALL RECIPES TAB (Grid)

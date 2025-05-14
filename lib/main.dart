@@ -9,6 +9,8 @@ import 'package:project/recipePage/RecipePage.dart';
 import 'package:project/recipePage/RecipeDetailPage.dart';
 import 'signUp/LoginPage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'LandingPage.dart';
+// import 'signUp/SignUpPage.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Ensure Flutter bindings are initialized
@@ -30,6 +32,8 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(fontFamily: 'Poppins'),
       routes: {
         '/': (context) => AuthenticationWrapper(),
+        // '/login': (context) => LoginPage(),
+        // '/signup': (context) => SignUpPage(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/recipeDetail') {
@@ -57,6 +61,7 @@ class AuthenticationWrapper extends StatelessWidget {
 
         // 2) If there's no Auth user, go to Login
         if (!authSnapshot.hasData || authSnapshot.data == null) {
+          // return const LandingPage();
           return LoginPage();
         }
 

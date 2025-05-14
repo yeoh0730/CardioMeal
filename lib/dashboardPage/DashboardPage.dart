@@ -358,23 +358,23 @@ class _DashboardPageState extends State<DashboardPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Optional: Title can be added here
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                  child: IconButton(
-                    padding: EdgeInsets.zero,
-                    icon: const Icon(Icons.add, size: 18, color: Colors.white),
-                    onPressed: () => _showSingleMetricDialog(metricKey),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
+            // Row(
+            //   mainAxisAlignment: MainAxisAlignment.end,
+            //   children: [
+            //     // Optional: Title can be added here
+            //     Container(
+            //       width: 25,
+            //       height: 25,
+            //       decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+            //       child: IconButton(
+            //         padding: EdgeInsets.zero,
+            //         icon: const Icon(Icons.add, size: 18, color: Colors.white),
+            //         onPressed: () => _showSingleMetricDialog(metricKey),
+            //       ),
+            //     ),
+            //   ],
+            // ),
+            const SizedBox(height: 10),
             SizedBox(
               height: 200,
               child: LineChart(
@@ -633,23 +633,102 @@ class _DashboardPageState extends State<DashboardPage> {
             //   ],
             // ),
             const SizedBox(height: 8),
-            const Text("Cholesterol (mg/dl)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Cholesterol (mg/dl)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Container(
+                  width: 25,
+                  height: 25,
+                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.add, size: 18, color: Colors.white),
+                    onPressed: () => _showSingleMetricDialog("Cholesterol"),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 4),
-            _buildMetricGraph("Cholesterol (mg/dl)", "Cholesterol"),
+            _buildMetricGraph("Cholesterol", "Cholesterol"),
+
             const SizedBox(height: 16),
-            const Text("Systolic BP (mmHg)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Systolic BP (mmHg)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Container(
+                  width: 25,
+                  height: 25,
+                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.add, size: 18, color: Colors.white),
+                    onPressed: () => _showSingleMetricDialog("SystolicBP"),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 4),
             _buildMetricGraph("Systolic BP (mmHg)", "SystolicBP"),
+
             const SizedBox(height: 16),
-            const Text("Diastolic BP (mmHg)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Diastolic BP (mmHg)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Container(
+                  width: 25,
+                  height: 25,
+                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.add, size: 18, color: Colors.white),
+                    onPressed: () => _showSingleMetricDialog("DiastolicBP"),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 4),
             _buildMetricGraph("Diastolic BP (mmHg)", "DiastolicBP"),
+
             const SizedBox(height: 16),
-            const Text("Blood Glucose (mg/dl)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Blood Glucose (mg/dl)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Container(
+                  width: 25,
+                  height: 25,
+                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.add, size: 18, color: Colors.white),
+                    onPressed: () => _showSingleMetricDialog("BloodGlucose"),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 4),
             _buildMetricGraph("Blood Glucose (mg/dl)", "BloodGlucose"),
+
             const SizedBox(height: 16),
-            const Text("Resting Heart Rate (bpm)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Resting Heart Rate (bpm)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Container(
+                  width: 25,
+                  height: 25,
+                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.add, size: 18, color: Colors.white),
+                    onPressed: () => _showSingleMetricDialog("HeartRate"),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 4),
             _buildMetricGraph("Resting Heart Rate (bpm)", "HeartRate"),
           ],

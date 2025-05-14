@@ -27,12 +27,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
 
   final PageController _pageController = PageController();
   int _currentPage = 0;
-
+  bool _isFocused = false; // Track focus state
   // Controllers
   final TextEditingController _firstNameController = TextEditingController();
-  final TextEditingController _ageController = TextEditingController();
-  final TextEditingController _heightController = TextEditingController();
-  final TextEditingController _weightController = TextEditingController();
   final TextEditingController _cholesterolController = TextEditingController();
   final TextEditingController _systolicBPController = TextEditingController();
   final TextEditingController _diastolicBPController = TextEditingController();
@@ -46,8 +43,12 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   String? _selectedActivityLevel;
   String _errorMessage = "";
 
+  double selectedHeight = 160.0; // default starting value in cm
+  double selectedWeight = 45.0;  // default starting value in kg
+  int selectedAge = 40;
+
   // Adjust this to your total number of pages/steps
-  final int totalSteps = 7;
+  final int totalSteps = 8;
 
   // ======== NAVIGATION ========
   void _nextPage() {
@@ -59,47 +60,35 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         _errorMessage = "Please enter your first name.";
         return;
       }
-      if (_currentPage == 1 && _ageController.text.trim().isEmpty) {
-        _errorMessage = "Please enter your age.";
-        return;
-      }
       if (_currentPage == 2 && (_gender == null || _gender!.isEmpty)) {
         _errorMessage = "Please select your gender.";
         return;
       }
-      if (_currentPage == 3 && _heightController.text.trim().isEmpty) {
-        _errorMessage = "Please enter your height.";
-        return;
-      }
-      if (_currentPage == 3 && _weightController.text.trim().isEmpty) {
-        _errorMessage = "Please enter your weight.";
-        return;
-      }
-      if (_currentPage == 4 && (_selectedActivityLevel == null || _selectedActivityLevel!.isEmpty)) {
+      if (_currentPage == 5 && (_selectedActivityLevel == null || _selectedActivityLevel!.isEmpty)) {
         _errorMessage = "Please select your level of activity.";
         return;
       }
-      if (_currentPage == 5 && _cholesterolController.text.trim().isEmpty) {
+      if (_currentPage == 6 && _cholesterolController.text.trim().isEmpty) {
         _errorMessage = "Please enter your cholesterol level.";
         return;
       }
-      if (_currentPage == 5 && _systolicBPController.text.trim().isEmpty) {
+      if (_currentPage == 6 && _systolicBPController.text.trim().isEmpty) {
         _errorMessage = "Please enter your systolic blood pressure.";
         return;
       }
-      if (_currentPage == 5 && _diastolicBPController.text.trim().isEmpty) {
+      if (_currentPage == 6 && _diastolicBPController.text.trim().isEmpty) {
         _errorMessage = "Please enter your diastolic blood pressure.";
         return;
       }
-      if (_currentPage == 5 && _bloodGlucoseController.text.trim().isEmpty) {
+      if (_currentPage == 6 && _bloodGlucoseController.text.trim().isEmpty) {
         _errorMessage = "Please enter your blood glucose level.";
         return;
       }
-      if (_currentPage == 5 && _heartRateController.text.trim().isEmpty) {
+      if (_currentPage == 6 && _heartRateController.text.trim().isEmpty) {
         _errorMessage = "Please enter your resting heart rate.";
         return;
       }
-      if (_currentPage == 6) {
+      if (_currentPage == 7) {
         // Either the user must have at least one checkbox selected,
         // OR they must have typed something in the free-form field.
         if (_selectedDietaryPreferences.isEmpty && _freePreferenceController.text.trim().isEmpty) {
@@ -168,40 +157,14 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         "email": user.email,
         "createdAt": DateTime.now(),
         "name": _firstNameController.text.trim(),
-        "age": _ageController.text.trim(),
+        "age": selectedAge.toString(),
         "gender": _gender,
-        "height": _heightController.text.trim(),
-        "weight": _weightController.text.trim(),
+        'height': selectedHeight.toString(),
+        'weight': selectedWeight.toString(),
+
         "dietaryPreferences": _selectedDietaryPreferences,
         "activityLevel": _selectedActivityLevel,
       }, SetOptions(merge: true));
-
-      // // Save health metrics
-      // String timestamp = DateTime.now().toIso8601String();
-      //
-      // await firestore.collection("users").doc(user.uid).collection("healthMetrics").doc(timestamp).set({
-      //   "cholesterol": double.tryParse(_cholesterolController.text.trim()) ?? 0,
-      //   "systolicBP": double.tryParse(_systolicBPController.text.trim()) ?? 0,
-      //   "diastolicBP": double.tryParse(_diastolicBPController.text.trim()) ?? 0,
-      //   "bloodGlucose": double.tryParse(_bloodGlucoseController.text.trim()) ?? 0,
-      //   "heartRate": double.tryParse(_heartRateController.text.trim()) ?? 0,
-      //   "timestamp": FieldValue.serverTimestamp(),
-      // });
-      //
-      // // 2) Calculate nutrient limits and store them.
-      // // Prepare the user data required for nutrient calculation.
-      // Map<String, dynamic> nutrientData = {
-      //   'weight': _weightController.text.trim(),         // in kg
-      //   'height': _heightController.text.trim(),           // in cm
-      //   'age': _ageController.text.trim(),                 // in years
-      //   'gender': _gender,                                 // "male" or "female"
-      //   'activityLevel': _selectedActivityLevel,           // e.g. "moderately active"
-      //   'cholesterol': _cholesterolController.text.trim(), // in mg/dl
-      //   'systolicBP': _systolicBPController.text.trim(),   // in mmHg
-      //   'diastolicBP': _diastolicBPController.text.trim(), // in mmHg
-      //   'bloodGlucose': _bloodGlucoseController.text.trim(), // in mg/dl
-      //   'heartRate': _heartRateController.text.trim(),     // in bpm
-      // };
 
       // Save each health metric in its own subcollection
       final timestamp = DateTime.now().toIso8601String();
@@ -228,9 +191,10 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       }
 
       final nutrientData = {
-        'weight': _weightController.text.trim(),
-        'height': _heightController.text.trim(),
-        'age': _ageController.text.trim(),
+        'weight': selectedWeight.toString(),
+        'height': selectedHeight.toString(),
+
+        'age': selectedAge.toString(),
         'gender': _gender,
         'activityLevel': _selectedActivityLevel,
         'cholesterol': _cholesterolController.text.trim(),
@@ -355,129 +319,264 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          CustomInputField(
-            controller: _firstNameController,
-            labelText: "What can we call you?",
-            labelText1: "Enter your first name",
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40.0),
+            child: Text(
+              "What Would You Like Us to Call You?",
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+            ),
           ),
+          const SizedBox(height: 30),
+          Focus(
+            onFocusChange: (hasFocus) {
+              setState(() {
+                _isFocused = hasFocus;
+              });
+            },
+            child: TextField(
+              controller: _firstNameController,
+              keyboardType: TextInputType.text,
+              style: const TextStyle(
+                color: Colors.black,
+              ),
+              decoration: InputDecoration(
+                labelText: "Enter your first name",
+                labelStyle: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: _isFocused
+                      ? Colors.black
+                      : Colors.black.withAlpha((0.4 * 255).toInt()),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: Colors.black, width: 2.0),
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: Colors.grey, width: 2.0),
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 25, horizontal: 20),
+              ),
+            ),
+          ),
+          const SizedBox(height: 30),
         ],
       ),
     );
   }
 
   Widget _buildPage2() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          CustomInputField(
-            controller: _ageController,
-            labelText: "How old are you?",
-            labelText1: "Enter your age",
-            keyboardType: TextInputType.number,
+    int initialIndex = selectedAge - 1;
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const SizedBox(height: 20),
+        const Text(
+          "How Old Are You?",
+          style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+        ),
+        Expanded(
+          child: ListWheelScrollView.useDelegate(
+            itemExtent: 60,
+            perspective: 0.005,
+            diameterRatio: 1.2,
+            physics: const FixedExtentScrollPhysics(),
+            controller: FixedExtentScrollController(initialItem: initialIndex),
+            onSelectedItemChanged: (value) {
+              setState(() => selectedAge = value + 1);
+            },
+            childDelegate: ListWheelChildBuilderDelegate(
+              builder: (context, index) {
+                final age = index + 1;
+                return Center(
+                  child: Text(
+                    "$age",
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: selectedAge == age ? FontWeight.bold : FontWeight.normal,
+                      color: selectedAge == age ? Colors.red : Colors.grey,
+                    ),
+                  ),
+                );
+              },
+              childCount: 120,
+            ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildPage3() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "What is your gender?",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+    return Column(
+      children: [
+        const SizedBox(height: 20),
+        const Text(
+          "What is Your Gender?",
+          style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 30),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 30),
+            children: [
+              _buildGenderOption("Male", "assets/male_icon.png", Colors.blue),
+              const SizedBox(height: 20),
+              _buildGenderOption("Female", "assets/female_icon.png", Colors.pink),
+            ],
           ),
-          const SizedBox(height: 15),
-          DropdownButtonFormField2<String>(
-            value: _gender,
-            isExpanded: true,
-            decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Colors.grey),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Colors.grey),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Colors.black),
-              ),
-            ),
-            hint: const Text(
-              "Select your gender",
-              style: TextStyle(
-                fontSize: 16, // ✅ Hint text size
-                color: Colors.black54,
-              ),
-            ),
-            items: ["Male", "Female"]
-                .map((item) => DropdownMenuItem<String>(
-              value: item,
-              child: Text(item),
-            ))
-                .toList(),
-            onChanged: (value) {
-              setState(() => _gender = value);
-            },
-            dropdownStyleData: DropdownStyleData(
-              maxHeight: 150,
-              elevation: 2,
-              offset: const Offset(0, -5), // you can adjust this
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            menuItemStyleData: const MenuItemStyleData(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-            ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGenderOption(String label, String imagePath, Color borderColor) {
+    final bool isSelected = _gender == label;
+
+    return GestureDetector(
+      onTap: () => setState(() => _gender = label),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.red[50] : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? Colors.red : Colors.grey.shade300,
+            width: 2,
           ),
-        ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 5,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 15,
+              backgroundColor: Colors.white,
+              backgroundImage: AssetImage(imagePath),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+            ),
+            if (isSelected)
+              const Icon(Icons.check_circle, color: Colors.red),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildPage4() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          CustomInputField(
-            controller: _heightController,
-            labelText: "How tall are you?",
-            labelText1: "Enter your height (cm)",
-            keyboardType: TextInputType.number,
+    int initialIndex = (selectedHeight - 100).toInt();
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const SizedBox(height: 15),
+        const Text(
+          "What is Your Height?",
+          style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+        ),
+        Expanded(
+          child: ListWheelScrollView.useDelegate(
+            itemExtent: 60,
+            perspective: 0.005,
+            diameterRatio: 1.2,
+            physics: const FixedExtentScrollPhysics(),
+            controller: FixedExtentScrollController(initialItem: initialIndex),
+            onSelectedItemChanged: (value) {
+              setState(() => selectedHeight = 100 + value.toDouble());
+            },
+            childDelegate: ListWheelChildBuilderDelegate(
+              builder: (context, index) {
+                final height = 100 + index;
+                return Center(
+                  child: Text(
+                    "$height cm",
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: selectedHeight.toInt() == height ? FontWeight.bold : FontWeight.normal,
+                      color: selectedHeight.toInt() == height ? Colors.red : Colors.grey,
+                    ),
+                  ),
+                );
+              },
+              childCount: 121,
+            ),
           ),
-          CustomInputField(
-            controller: _weightController,
-            labelText: "How much do you weigh?",
-            labelText1: "Enter your weight (kg)",
-            keyboardType: TextInputType.number,
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildPage5() {
+    int initialIndex = (selectedWeight - 30).toInt();
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const SizedBox(height: 15),
+        const Text(
+          "What is Your Weight?",
+          style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+        ),
+        Expanded(
+          child: ListWheelScrollView.useDelegate(
+            itemExtent: 60,
+            perspective: 0.005,
+            diameterRatio: 1.2,
+            physics: const FixedExtentScrollPhysics(),
+            controller: FixedExtentScrollController(initialItem: initialIndex),
+            onSelectedItemChanged: (value) {
+              setState(() => selectedWeight = 30 + value.toDouble());
+            },
+            childDelegate: ListWheelChildBuilderDelegate(
+              builder: (context, index) {
+                final weight = 30 + index;
+                return Center(
+                  child: Text(
+                    "$weight kg",
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: selectedWeight.toInt() == weight ? FontWeight.bold : FontWeight.normal,
+                      color: selectedWeight.toInt() == weight ? Colors.red : Colors.grey,
+                    ),
+                  ),
+                );
+              },
+              childCount: 121,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+
+  Widget _buildPage6() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            "What is your level of activity?",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            "What is Your Level of Activity?",
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 15),
           _buildActivityOption("Sedentary", "Little or no exercise, mostly sitting."),
           _buildActivityOption("Lightly Active", "Light exercise 1-3 days per week."),
           _buildActivityOption("Moderately Active", "Moderate exercise 3-5 days per week."),
@@ -488,38 +587,38 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     );
   }
 
-  Widget _buildPage6() {
+  Widget _buildPage7() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
           CustomInputField(
             controller: _cholesterolController,
-            labelText: "What is your cholesterol level?",
+            labelText: "What is Your Cholesterol Level?",
             labelText1: "Enter your cholesterol level (mg/dl)",
             keyboardType: TextInputType.number,
           ),
           CustomInputField(
             controller: _systolicBPController,
-            labelText: "What is your systolic blood pressure?",
+            labelText: "What is Your Systolic Blood Pressure?",
             labelText1: "Enter your systolic blood pressure (mmHg)",
             keyboardType: TextInputType.number,
           ),
           CustomInputField(
             controller: _diastolicBPController,
-            labelText: "What is your diastolic blood pressure?",
+            labelText: "What is Your Diastolic Blood Pressure?",
             labelText1: "Enter your diastolic blood pressure (mmHg)",
             keyboardType: TextInputType.number,
           ),
           CustomInputField(
             controller: _bloodGlucoseController,
-            labelText: "What is your blood glucose level?",
+            labelText: "What is Your Blood Glucose Level?",
             labelText1: "Enter your blood glucose level (mg/dl)",
             keyboardType: TextInputType.number,
           ),
           CustomInputField(
             controller: _heartRateController,
-            labelText: "What is your resting heart rate?",
+            labelText: "What is Your Resting Heart Rate?",
             labelText1: "Enter your resting heart rate (bpm)",
             keyboardType: TextInputType.number,
           ),
@@ -528,7 +627,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     );
   }
 
-  Widget _buildPage7() {
+  Widget _buildPage8() {
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onTap: _dismissTooltip,
@@ -538,8 +637,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              "Do you have any dietary preference(s)?",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              "Do You Have Any Dietary Preference(s)?",
+              style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             const Text(
@@ -709,6 +808,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                   _buildPage5(),
                   _buildPage6(),
                   _buildPage7(),
+                  _buildPage8(),
                 ],
               ),
             ),
