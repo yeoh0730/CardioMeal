@@ -130,4 +130,34 @@ class ApiService {
       throw Exception("Failed to load meal recommendations");
     }
   }
+
+  static Future<List<dynamic>> fetchSimilarRecipes({
+    required String recipeId,
+    required Map<String, dynamic> userMetrics,
+  }) async {
+    final url = Uri.parse("$baseUrl/similar_recipes");
+
+    print("📤 Sending fetchSimilarRecipes request with ID: $recipeId");
+    print("📤 With metrics: $userMetrics");
+
+    final response = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "recipe_id": recipeId,
+        "user_metrics": userMetrics,
+      }),
+    );
+
+    print("📬 Response Status: ${response.statusCode}");
+    print("📦 Body: ${response.body}");
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      return decoded["similar_recipes"] ?? [];
+    } else {
+      throw Exception("Failed to fetch similar recipes");
+    }
+  }
+
 }

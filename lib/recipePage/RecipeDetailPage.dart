@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../models/recipe_card.dart';
+import '../services/api_service.dart';
+
 class RecipeDetailPage extends StatefulWidget {
   final String recipeId;
 
@@ -13,11 +16,28 @@ class RecipeDetailPage extends StatefulWidget {
 
 class _RecipeDetailPageState extends State<RecipeDetailPage> {
   Map<String, dynamic>? recipeDetails;
+  List<Map<String, dynamic>> similarRecipes = [];
+  bool isLoadingSimilar = true;
+
   bool isLoading = true;
   bool isFavorited = false; // Track favorite status
 
   // Controller for PageView (images carousel)
   final PageController _pageController = PageController();
+
+  final Set<String> allowedTags = {
+    "5 Ingredients Or Less", "African", "Alcohol-Free", "Appetizers", "Asian", "Beef", "Beverages", "Brazilian",
+    "British", "Brunch", "Budget", "Central & South American", "Chicken", "Chilis", "Chinese", "Cocktails",
+    "Coffee", "Comfort Food", "Dairy", "Dairy-Free", "Desserts", "Dietary", "Difficulty", "Dinner", "Drinks",
+    "Easy", "European", "Filipino", "Freezer Friendly", "French", "Fusion", "German", "Gin", "Gluten",
+    "Gluten-Free", "Halal", "Hawaiian", "Healthy", "High-Fiber", "High-Protein", "Indian", "Italian", "Jamaican",
+    "Japanese", "Jewish", "Keto", "Kid-Friendly", "Korean", "Kosher", "Low-Calorie", "Low-Carb", "Low-Fat",
+    "Low-Sugar", "Lunch", "Mediterranean", "Mexican", "Middle Eastern", "Mocktails", "No Bake Desserts",
+    "North American", "Pastries", "Peanuts", "Pork", "Puddings", "Quiches", "Rum", "Salads", "Sandwiches",
+    "Seafood", "Seafood Pasta", "Shellfish", "Sides", "Snacks", "Soups", "South African", "Southern",
+    "Southwestern", "Swedish", "Sweet Breakfasts", "Taiwanese", "Thai", "Under 1 Hour", "Under 15 Minutes",
+    "Under 30 Minutes", "Under 45 Minutes", "Vegan", "Vegetarian", "Vietnamese", "West African"
+  };
 
   @override
   void initState() {
@@ -26,7 +46,6 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
     _checkIfFavorited();
   }
 
-  // Fetch recipe details from Firestore
   void _fetchRecipeDetails() async {
     try {
       DocumentSnapshot doc = await FirebaseFirestore.instance
@@ -64,6 +83,43 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
           };
           isLoading = false;
         });
+
+        // ✅ Fetch similar recipes
+        print("🔍 Calling fetchSimilarRecipes for: ${widget.recipeId}");
+
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          final userData = await ApiService.fetchUserData();
+
+          final userMetrics = {
+            "Weight": userData?["weight"] ?? 70,
+            "Height": userData?["height"] ?? 175,
+            "Cholesterol": userData?["Cholesterol"] ?? 200,
+            "Systolic_BP": userData?["Systolic_BP"] ?? 120,
+            "Diastolic_BP": userData?["Diastolic_BP"] ?? 80,
+            "Blood_Glucose": userData?["Blood_Glucose"] ?? 100,
+            "Heart_Rate": userData?["Heart_Rate"] ?? 75,
+          };
+
+          try {
+            final similar = await ApiService.fetchSimilarRecipes(
+              recipeId: widget.recipeId,
+              userMetrics: userMetrics,
+            );
+
+            print("✅ Similar recipes fetched: ${similar.length}");
+            setState(() {
+              similarRecipes = List<Map<String, dynamic>>.from(similar);
+              isLoadingSimilar = false;
+            });
+          } catch (e) {
+            print("❌ Error fetching similar recipes: $e");
+            setState(() {
+              isLoadingSimilar = false;
+            });
+          }
+        }
+
       } else {
         // Document doesn't exist
         setState(() {
@@ -77,6 +133,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
       });
     }
   }
+
 
   // Check if the recipe is already favorited by the user
   Future<void> _checkIfFavorited() async {
@@ -203,7 +260,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
             Stack(
               children: [
                 SizedBox(
-                  height: 300,
+                  height: 320,
                   width: double.infinity,
                   child: PageView.builder(
                     controller: _pageController,
@@ -257,105 +314,220 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
             // Recipe Body
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Recipe Name
-                  Text(
-                    recipeDetails!["Name"],
-                    style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-                  // Description
-                  Text(
-                    recipeDetails!["Description"],
-                    style: const TextStyle(fontSize: 16, color: Colors.black54),
-                  ),
-                  const SizedBox(height: 20),
-                  // Ingredients
-                  Text("Ingredients (For ${recipeDetails!["ServingSize"]} servings)", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 10),
-                  for (var ingredient in ingredientsList)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text("• ", style: TextStyle(fontSize: 16)),
-                          Expanded(
-                            child: Text(
-                              _capitalizeFirstWord(ingredient),
-                              style: const TextStyle(fontSize: 16),
-                              softWrap: true,
-                            ),
-                          )
-                        ],
+            Transform.translate(
+              offset: const Offset(0, -30),
+              child:             ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(28),
+                  topRight: Radius.circular(28),
+                ),
+                child: Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Recipe Name
+                      Text(
+                        recipeDetails!["Name"],
+                        style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
                       ),
-                    ),
-                  const SizedBox(height: 20),
-                  // Instructions
-                  const Text("Instructions", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 10),
-                  for (int i = 0; i < instructionsList.length; i++)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("${i + 1}. ", style: const TextStyle(fontSize: 16)),
-                          Expanded(
-                            child: Text(
-                              instructionsList[i],
-                              style: const TextStyle(fontSize: 16),
-                              softWrap: true,
+                      const SizedBox(height: 8),
+
+                      // Time | Calories | Servings row
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            Flexible(
+                              child: Column(
+                                children: [
+                                  Text(
+                                    recipeDetails!["TotalTime"] ?? "0",
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.orange,
+                                    ),
+                                  ),
+                                  const Text("Total Time", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                ],
+                              ),
                             ),
-                          )
-                        ],
-                      ),
-                    ),
-                  const SizedBox(height: 20),
-                  // Nutrition Info
-                  const Text("Nutrition Info (Per serving)", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 10),
-                  _buildNutritionRow("Calories", "${recipeDetails?["Calories"]} kcal"),
-                  _buildNutritionRow("Fat", "${recipeDetails?["FatContent"]} g"),
-                  _buildNutritionRow("Carbs", "${recipeDetails?["CarbohydrateContent"]} g"),
-                  _buildNutritionRow("Protein", "${recipeDetails?["ProteinContent"]} g"),
-                  _buildNutritionRow("Sodium", "${recipeDetails?["SodiumContent"]} mg"),
-                  _buildNutritionRow("Cholesterol", "${recipeDetails?["CholesterolContent"]} mg"),
-                  const SizedBox(height: 20),
-                  // Tags/Keywords
-                  const Text("Tags", style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 10,
-                    children: keywordsList.map((keyword) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(25),
+                            Column(
+                              children: [
+                                Text(
+                                  recipeDetails!["Calories"] ?? "0",
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orange,
+                                  ),
+                                ),
+                                const Text("kcal/serving", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                              ],
+                            ),
+                            Flexible(
+                              child: Column(
+                                children: [
+                                  Text(
+                                    recipeDetails!["ServingSize"] ?? "1",
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.orange,
+                                    ),
+                                  ),
+                                  const Text("Serving", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        child: Text(
-                          keyword,
-                          style: const TextStyle(
-                            color: Colors.black87,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Filtered Tags
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: keywordsList
+                              .where((keyword) => allowedTags.contains(keyword))
+                              .map((keyword) {
+                            return Container(
+                              margin: const EdgeInsets.only(right: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.shade100,
+                                borderRadius: BorderRadius.circular(25),
+                              ),
+                              child: Text(
+                                keyword,
+                                style: const TextStyle(
+                                  color: Colors.black87,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+
+                      // Description
+                      Text(
+                        recipeDetails!["Description"],
+                        style: const TextStyle(fontSize: 15, color: Colors.black54),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Ingredients
+                      const Text("Ingredients", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 10),
+                      for (var ingredient in ingredientsList)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text("• ", style: TextStyle(fontSize: 15)),
+                              Expanded(
+                                child: Text(
+                                  _capitalizeFirstWord(ingredient),
+                                  style: const TextStyle(fontSize: 15),
+                                  softWrap: true,
+                                ),
+                              )
+                            ],
                           ),
                         ),
-                      );
-                    }).toList(),
+
+                      const SizedBox(height: 20),
+
+                      // Instructions
+                      const Text("Instructions", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 10),
+                      for (int i = 0; i < instructionsList.length; i++)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("${i + 1}. ", style: const TextStyle(fontSize: 15)),
+                              Expanded(
+                                child: Text(
+                                  instructionsList[i],
+                                  style: const TextStyle(fontSize: 15),
+                                  softWrap: true,
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
+
+                      const SizedBox(height: 20),
+
+                      // Nutrition Info
+                      const Text("Nutrition Info (Per serving)", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 10),
+                      _buildNutritionRow("Calories", "${recipeDetails?["Calories"]} kcal"),
+                      _buildNutritionRow("Fat", "${recipeDetails?["FatContent"]} g"),
+                      _buildNutritionRow("Carbs", "${recipeDetails?["CarbohydrateContent"]} g"),
+                      _buildNutritionRow("Protein", "${recipeDetails?["ProteinContent"]} g"),
+                      _buildNutritionRow("Sodium", "${recipeDetails?["SodiumContent"]} mg"),
+                      _buildNutritionRow("Cholesterol", "${recipeDetails?["CholesterolContent"]} mg"),
+                      const SizedBox(height: 30),
+
+                      if (isLoadingSimilar)
+                        const Center(child: CircularProgressIndicator())
+                      else if (similarRecipes.isNotEmpty)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text("You May Also Like", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: similarRecipes.length,
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                childAspectRatio: 0.7,
+                                crossAxisSpacing: 10,
+                                mainAxisSpacing: 10,
+                              ),
+                              itemBuilder: (context, index) {
+                                final recipe = similarRecipes[index];
+                                return RecipeCard(
+                                  title: recipe["Name"] ?? "No Name",
+                                  totalTime: recipe["TotalTime"]?.toString() ?? "N/A",
+                                  imageUrl: recipe["Images"]?.toString() ?? "",
+                                  recipeId: recipe["RecipeId"]?.toString() ?? "",
+                                  isFavorited: false, // Optional: update if you have favorite tracking
+                                  onFavoriteTap: () {},
+                                  onCardTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => RecipeDetailPage(recipeId: recipe["RecipeId"].toString()),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                          ],
+                        )
+
+                    ],
                   ),
-                  const SizedBox(height: 30),
-                ],
+                ),
               ),
-            ),
+            )
+
           ],
         ),
       ),
@@ -369,8 +541,8 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-          Text(value, style: const TextStyle(fontSize: 16)),
+          Text(label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+          Text(value, style: const TextStyle(fontSize: 15)),
         ],
       ),
     );
