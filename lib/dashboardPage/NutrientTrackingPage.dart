@@ -247,10 +247,11 @@ class _NutrientTabState extends State<NutrientTab> {
 
     return Card(
       color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 3,
+      shadowColor: Colors.black12,
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -258,29 +259,32 @@ class _NutrientTabState extends State<NutrientTab> {
               height: 200,
               child: LineChart(
                 LineChartData(
-                  maxY: maxCalorieY,
                   minY: 0,
-                  borderData: FlBorderData(
+                  maxY: maxCalorieY,
+                  borderData: FlBorderData(show: false),
+                  gridData: FlGridData(
                     show: true,
-                    border: const Border(
-                      left: BorderSide(color: Colors.grey, width: 1),  // Y-axis
-                      bottom: BorderSide(color: Colors.grey, width: 1), // X-axis
+                    drawVerticalLine: true,
+                    drawHorizontalLine: true,
+                    getDrawingHorizontalLine: (value) => FlLine(
+                      color: Colors.grey.withOpacity(0.1),
+                      strokeWidth: 1,
+                    ),
+                    getDrawingVerticalLine: (value) => FlLine(
+                      color: Colors.grey.withOpacity(0.05),
+                      strokeWidth: 1,
                     ),
                   ),
-                  gridData: FlGridData(show: false),
                   titlesData: FlTitlesData(
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
-                        reservedSize: 27,
+                        reservedSize: 33,
                         interval: interval,
-                        getTitlesWidget: (value, _) {
-                          if (value % interval != 0) return const SizedBox.shrink();
-                          return Text(
-                            value.toInt().toString(),
-                            style: const TextStyle(fontSize: 10),
-                          );
-                        },
+                        getTitlesWidget: (value, _) => Text(
+                          value.toInt().toString(),
+                          style: const TextStyle(fontSize: 11, color: Colors.black87),
+                        ),
                       ),
                     ),
                     bottomTitles: AxisTitles(
@@ -290,36 +294,15 @@ class _NutrientTabState extends State<NutrientTab> {
                         getTitlesWidget: (value, _) {
                           int index = value.toInt();
                           if (index < 0 || index >= dates.length) return const SizedBox.shrink();
-                          if (index % dateLabelInterval != 0) return const SizedBox.shrink();
                           return Text(
                             DateFormat('dd/MM').format(dates[index]),
-                            style: const TextStyle(fontSize: 10),
+                            style: const TextStyle(fontSize: 11, color: Colors.black87),
                           );
                         },
                       ),
                     ),
                     topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  ),
-                  lineTouchData: LineTouchData(
-                    enabled: true,
-                    touchTooltipData: LineTouchTooltipData(
-                      getTooltipColor: (LineBarSpot spot) => Colors.red.shade100,
-                      tooltipRoundedRadius: 8,
-                      tooltipPadding: const EdgeInsets.all(8),
-                      tooltipBorder: BorderSide.none,
-                      getTooltipItems: (List<LineBarSpot> touchedSpots) {
-                        return touchedSpots.map((spot) {
-                          return LineTooltipItem(
-                            '${spot.y.toStringAsFixed(1)} kcal',
-                            const TextStyle(
-                              color: Colors.black,
-                              fontSize: 12,
-                            ),
-                          );
-                        }).toList();
-                      },
-                    ),
                   ),
                   extraLinesData: ExtraLinesData(horizontalLines: [
                     HorizontalLine(
@@ -335,13 +318,37 @@ class _NutrientTabState extends State<NutrientTab> {
                       ),
                     )
                   ]),
+                  lineTouchData: LineTouchData(
+                    enabled: true,
+                    handleBuiltInTouches: true,
+                  ),
                   lineBarsData: [
                     LineChartBarData(
                       isCurved: true,
+                      spots: _calorieSpots,
                       color: Colors.red,
                       barWidth: 2,
-                      dotData: FlDotData(show: true),
-                      spots: _calorieSpots,
+                      isStrokeCapRound: true,
+                      belowBarData: BarAreaData(
+                        show: true,
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.red.withOpacity(0.6),
+                            Colors.red.withOpacity(0),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                      dotData: FlDotData(
+                        show: true,
+                        getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                          radius: 3,
+                          color: Colors.white,
+                          strokeWidth: 2,
+                          strokeColor: Colors.red,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -364,7 +371,21 @@ class _NutrientTabState extends State<NutrientTab> {
     double maxY = [
       goalValue,
       ...dataSpots.map((s) => s.y),
-    ].reduce((a, b) => a > b ? a : b) * 1.2;
+    ].reduce(max) * 1.2;
+
+    double interval = maxY > 3000
+        ? 500
+        : maxY > 1500
+        ? 300
+        : maxY > 1000
+        ? 100
+        : maxY > 500
+        ? 50
+        : maxY > 100
+        ? 30
+        : maxY > 70
+        ? 10
+        : 5;
 
     int dateLabelInterval = dates.length > 7 ? (dates.length / 7).ceil() : 1;
 
@@ -372,150 +393,121 @@ class _NutrientTabState extends State<NutrientTab> {
       padding: const EdgeInsets.only(top: 4),
       child: Card(
         color: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: 3,
+        shadowColor: Colors.black12,
         child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Text(label, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              SizedBox(
-                height: 260,
-                child: LineChart(
-                  LineChartData(
-                    maxY: maxY,
-                    minY: 0,
-                    gridData: FlGridData(show: false),
-                    borderData: FlBorderData(
-                      show: true,
-                      border: const Border(
-                        left: BorderSide(color: Colors.grey, width: 1),  // Y-axis
-                        bottom: BorderSide(color: Colors.grey, width: 1), // X-axis
-                      ),
-                    ),
-                    lineBarsData: [
-                      LineChartBarData(
-                        isCurved: true,
-                        spots: dataSpots,
-                        color: lineColor,
-                        barWidth: 2,
-                        dotData: FlDotData(show: true),
-                      ),
-                    ],
-                    extraLinesData: ExtraLinesData(horizontalLines: [
-                      HorizontalLine(
-                        y: goalValue,
-                        color: goalLineColor,
-                        strokeWidth: 1.5,
-                        dashArray: [6, 4],
-                        label: HorizontalLineLabel(
-                          show: true,
-                          labelResolver: (_) {
-                            final isSodium = label.toLowerCase() == "sodium";
-                            final unit = isSodium ? "mg" : "g";
-                            return "${goalValue.toStringAsFixed(0)} $unit";
-                          },
-                          style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold),
-                          alignment: Alignment.topRight,
-                        ),
-                      )
-                    ]),
-                    lineTouchData: LineTouchData(
-                      enabled: true,
-                      touchTooltipData: LineTouchTooltipData(
-                        getTooltipColor: (LineBarSpot spot) {
-                          if (label.toLowerCase().contains("carbs")) return Colors.blue.shade100;
-                          if (label.toLowerCase().contains("sodium")) return Colors.purple.shade100;
-                          if (label.toLowerCase().contains("fat")) return Colors.orange.shade100;
-                          return Colors.grey.shade800;
-                        },
-                        tooltipRoundedRadius: 8,
-                        tooltipPadding: const EdgeInsets.all(8),
-                        tooltipBorder: BorderSide.none,
-                        getTooltipItems: (List<LineBarSpot> touchedSpots) {
-                          return touchedSpots.map((spot) {
-                            return LineTooltipItem(
-                              '${spot.y.toStringAsFixed(1)}',
-                              const TextStyle(
-                                color: Colors.black,
-                                fontSize: 12,
-                              ),
-                            );
-                          }).toList();
-                        },
-                      ),
-                    ),
-                    titlesData: FlTitlesData(
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 30,
-                          interval: dateLabelInterval.toDouble(),
-                          getTitlesWidget: (value, _) {
-                            int index = value.toInt();
-                            if (index < 0 || index >= dates.length) return const SizedBox.shrink();
-                            if (index % dateLabelInterval != 0) return const SizedBox.shrink();
-                            return Text(
-                              DateFormat('dd/MM').format(dates[index]),
-                              style: const TextStyle(fontSize: 10),
-                            );
-                          },
-                        ),
-                      ),
-                      leftTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 32,
-                          interval: maxY > 3000
-                              ? 500
-                              : maxY > 1500
-                              ? 300
-                              : maxY > 1000
-                              ? 100
-                              : maxY > 500
-                              ? 50
-                              : maxY > 100
-                              ? 30
-                              : maxY > 70
-                              ? 10
-                              : 5,
-                          getTitlesWidget: (value, _) {
-                            double interval = maxY > 3000
-                                ? 500
-                                : maxY > 1500
-                                ? 300
-                                : maxY > 1000
-                                ? 100
-                                : maxY > 500
-                                ? 50
-                                : maxY > 100
-                                ? 30
-                                : maxY > 70
-                                ? 10
-                                : 5;
-
-                            if (value % interval != 0) return const SizedBox.shrink();
-
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 4),
-                              child: Text(
-                                value.toInt().toString(),
-                                style: const TextStyle(fontSize: 10),
-                                textAlign: TextAlign.right,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    ),
+          padding: const EdgeInsets.all(16),
+          child: SizedBox(
+            height: 260,
+            child: LineChart(
+              LineChartData(
+                minY: 0,
+                maxY: maxY,
+                borderData: FlBorderData(show: false),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: true,
+                  drawHorizontalLine: true,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: Colors.grey.withOpacity(0.1),
+                    strokeWidth: 1,
+                  ),
+                  getDrawingVerticalLine: (value) => FlLine(
+                    color: Colors.grey.withOpacity(0.05),
+                    strokeWidth: 1,
                   ),
                 ),
+                titlesData: FlTitlesData(
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 30,
+                      interval: dateLabelInterval.toDouble(),
+                      getTitlesWidget: (value, _) {
+                        int index = value.toInt();
+                        if (index < 0 || index >= dates.length) return const SizedBox.shrink();
+                        return Text(
+                          DateFormat('dd/MM').format(dates[index]),
+                          style: const TextStyle(fontSize: 11, color: Colors.black87),
+                        );
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 33,
+                      interval: interval,
+                      getTitlesWidget: (value, _) {
+                        if (value % interval != 0) return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: Text(
+                            value.toInt().toString(),
+                            style: const TextStyle(fontSize: 11, color: Colors.black87),
+                            textAlign: TextAlign.right,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                ),
+                extraLinesData: ExtraLinesData(horizontalLines: [
+                  HorizontalLine(
+                    y: goalValue,
+                    color: goalLineColor,
+                    strokeWidth: 1.5,
+                    dashArray: [6, 4],
+                    label: HorizontalLineLabel(
+                      show: true,
+                      labelResolver: (_) {
+                        final isSodium = label.toLowerCase() == "sodium";
+                        final unit = isSodium ? "mg" : "g";
+                        return "${goalValue.toStringAsFixed(0)} $unit";
+                      },
+                      style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold),
+                      alignment: Alignment.topRight,
+                    ),
+                  )
+                ]),
+                lineTouchData: LineTouchData(
+                  enabled: true,
+                  handleBuiltInTouches: true,
+                ),
+                lineBarsData: [
+                  LineChartBarData(
+                    isCurved: true,
+                    spots: dataSpots,
+                    color: lineColor,
+                    barWidth: 2,
+                    isStrokeCapRound: true,
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        colors: [
+                          lineColor.withOpacity(0.6),
+                          lineColor.withOpacity(0),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                        radius: 3,
+                        color: Colors.white,
+                        strokeWidth: 2,
+                        strokeColor: lineColor,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

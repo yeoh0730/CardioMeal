@@ -21,12 +21,31 @@ class _DashboardPageState extends State<DashboardPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   final Map<String, Color> metricColors = {
-    "Cholesterol": Colors.deepOrange,
-    "SystolicBP": Colors.orangeAccent,
-    "DiastolicBP": Colors.teal,
-    "BloodGlucose": Colors.blue,
-    "HeartRate": Colors.deepPurpleAccent,
+    "Cholesterol": Color(0xFFFF6B6B),    // coralRed
+    "SystolicBP": Color(0xFFFFB347),     // amberOrange
+    "DiastolicBP": Color(0xFF52B788),    // forestGreen
+    "BloodGlucose": Color(0xFF4D96FF),   // seaBlue
+    "HeartRate": Color(0xFF9D4EDD),      // violetPurple
   };
+
+  // final Map<String, Color> metricColors = {
+  //   "Cholesterol": Color(0xFF118AB2),     // dustyBlue
+  //   "SystolicBP": Color(0xFFFFD166),      // mangoYellow
+  //   "DiastolicBP": Color(0xFF06D6A0),     // skyTeal
+  //   "BloodGlucose": Color(0xFF735DFF),    // softIndigo
+  //   "HeartRate": Color(0xFFEF476F),       // blushPink
+  // };
+
+  // final Map<String, Color> metricColors = {
+  //   "Cholesterol": Color(0xFFB08968),   // roseBrown
+  //   "SystolicBP": Color(0xFFFFBCB3),    // apricotPeach
+  //   "DiastolicBP": Color(0xFF84A98C),   // oliveGreen
+  //   "BloodGlucose": Color(0xFF60A3A3),  // dustyTeal
+  //   "HeartRate": Color(0xFFE3B23C),     // goldenOcher
+  // };
+
+
+
 
   Map<String, List<FlSpot>> healthData = {
     "Cholesterol": [],
@@ -347,139 +366,112 @@ class _DashboardPageState extends State<DashboardPage> {
     final List<DateTime> dates = _metricDateMap[metricKey] ?? [];
     final bool hasData = spots.isNotEmpty;
 
-    // Dynamic Y-axis range
     double minY = 0;
-    double maxY = 100; // default if no data
+    double maxY = 100;
 
     if (hasData) {
       final double peak = spots.map((s) => s.y).reduce(max);
       final double floor = spots.map((s) => s.y).reduce(min);
-      minY = floor;
+      minY = floor < 0 ? 0 : floor;
       maxY = peak;
-      if (minY < 0) minY = 0;
     }
 
     return Card(
       color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      elevation: 2,
+      elevation: 3,
+      shadowColor: Colors.black12,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Row(
-            //   mainAxisAlignment: MainAxisAlignment.end,
-            //   children: [
-            //     // Optional: Title can be added here
-            //     Container(
-            //       width: 25,
-            //       height: 25,
-            //       decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-            //       child: IconButton(
-            //         padding: EdgeInsets.zero,
-            //         icon: const Icon(Icons.add, size: 18, color: Colors.white),
-            //         onPressed: () => _showSingleMetricDialog(metricKey),
-            //       ),
-            //     ),
-            //   ],
-            // ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 4),
             SizedBox(
               height: 200,
-              child: LineChart(
-                LineChartData(
-                  minY: minY,
-                  maxY: maxY,
-                  gridData: FlGridData(
-                    show: false,
-                    drawVerticalLine: false,
-                    drawHorizontalLine: false,
-                    horizontalInterval: hasData ? ((maxY - minY) / 4).clamp(1, double.infinity) : 20,
-                    verticalInterval: 1,
-                    getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.withOpacity(0.2), strokeWidth: 1),
-                    getDrawingVerticalLine: (value) => FlLine(color: Colors.grey.withOpacity(0.2), strokeWidth: 1),
-                  ),
-                  borderData: FlBorderData(
-                    show: true,
-                    border: const Border(
-                      left: BorderSide(color: Colors.grey, width: 1),  // Y-axis
-                      bottom: BorderSide(color: Colors.grey, width: 1), // X-axis
-                    ),
-                  ),
-                  titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 24,
-                        interval: hasData ? ((maxY - minY) / 4).clamp(1, double.infinity) : 20,
-                        getTitlesWidget: (value, _) =>
-                            Text(value.toInt().toString(), style: const TextStyle(fontSize: 10)),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: LineChart(
+                  LineChartData(
+                    minY: minY,
+                    maxY: maxY,
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: true,
+                      drawHorizontalLine: true,
+                      getDrawingHorizontalLine: (value) => FlLine(
+                        color: Colors.grey.withOpacity(0.1),
+                        strokeWidth: 1,
+                      ),
+                      getDrawingVerticalLine: (value) => FlLine(
+                        color: Colors.grey.withOpacity(0.05),
+                        strokeWidth: 1,
                       ),
                     ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        interval: 1,
-                        getTitlesWidget: (value, _) {
-                          int index = value.toInt();
-                          if (index < 0 || index >= dates.length) return const SizedBox.shrink();
-                          return Text(DateFormat('dd/MM').format(dates[index]), style: const TextStyle(fontSize: 10));
-                        },
-                      ),
-                    ),
-                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  ),
-                  lineTouchData: LineTouchData(
-                    enabled: hasData,
-                    touchTooltipData: LineTouchTooltipData(
-                      getTooltipColor: (LineBarSpot touchedSpot) {
-                        // Customize the tooltip background color based on the y-value
-                        if (touchedSpot.y < 50) {
-                          return Colors.green;
-                        } else if (touchedSpot.y < 100) {
-                          return Colors.orange;
-                        } else {
-                          return Colors.grey.shade100;
-                        }
-                      },
-                      tooltipRoundedRadius: 8,
-                      tooltipPadding: const EdgeInsets.all(8),
-                      tooltipBorder: BorderSide.none,
-                      getTooltipItems: (List<LineBarSpot> touchedSpots) {
-                        return touchedSpots.map((spot) {
-                          return LineTooltipItem(
-                            '${spot.y.toStringAsFixed(1)}',
-                            const TextStyle(
-                              color: Colors.black,
-                              fontSize: 12,
-                            ),
-                          );
-                        }).toList();
-                      },
-                    ),
-                  ),
-                  lineBarsData: [
-                    LineChartBarData(
-                      isCurved: true,
-                      color: metricColors[metricKey] ?? Colors.red,
-                      barWidth: 2,
-                      spots: spots,
-                      dotData: FlDotData(show: hasData),
-                      belowBarData: BarAreaData(
-                        show: hasData,
-                        gradient: LinearGradient(
-                          colors: [
-                            (metricColors[metricKey] ?? Colors.red).withOpacity(0.3),
-                            (metricColors[metricKey] ?? Colors.red).withOpacity(0.005),
-                          ],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
+                    borderData: FlBorderData(show: false),
+                    titlesData: FlTitlesData(
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 28,
+                          interval: hasData ? ((maxY - minY) / 4).clamp(1, double.infinity) : 20,
+                          getTitlesWidget: (value, _) => Text(
+                            value.toInt().toString(),
+                            style: const TextStyle(fontSize: 10, color: Colors.black87),
+                          ),
                         ),
                       ),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          interval: 1,
+                          getTitlesWidget: (value, _) {
+                            int index = value.toInt();
+                            if (index < 0 || index >= dates.length) return const SizedBox.shrink();
+                            return Text(
+                              DateFormat('dd/MM').format(dates[index]),
+                              style: const TextStyle(fontSize: 10, color: Colors.black87),
+                            );
+                          },
+                        ),
+                      ),
+                      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     ),
-                  ],
+                    lineTouchData: LineTouchData(
+                      enabled: hasData,
+                      handleBuiltInTouches: true,
+                    ),
+                    lineBarsData: [
+                      LineChartBarData(
+                        isCurved: true,
+                        color: metricColors[metricKey]?.withOpacity(0.9),
+                        barWidth: 2,
+                        isStrokeCapRound: true,
+                        spots: spots,
+                        belowBarData: BarAreaData(
+                          show: hasData,
+                          gradient: LinearGradient(
+                            colors: [
+                              (metricColors[metricKey] ?? Colors.red).withOpacity(0.6), // 🔺 increased opacity
+                              (metricColors[metricKey] ?? Colors.red).withOpacity(0),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                        dotData: FlDotData(
+                          show: true,
+                          getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                            radius: 3,
+                            color: Colors.white,
+                            strokeWidth: 2,
+                            strokeColor: metricColors[metricKey] ?? Colors.red,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -488,6 +480,7 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
     );
   }
+
 
   // Widget _buildMetricGraph(String title, String metricKey) {
   //   final List<DateTime> dates = _metricDateMap[metricKey] ?? [];
