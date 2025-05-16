@@ -9,6 +9,8 @@ import 'package:project/recipePage/RecipePage.dart';
 import 'package:project/recipePage/RecipeDetailPage.dart';
 import 'signUp/LoginPage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project/userProfile/FavouriteRecipesPage.dart'; // adjust path if needed
+
 // import 'LandingPage.dart';
 // import 'signUp/SignUpPage.dart';
 
@@ -32,6 +34,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(fontFamily: 'Poppins'),
       routes: {
         '/': (context) => AuthenticationWrapper(),
+        '/favoriteRecipes': (context) => FavoriteRecipesPage(),
         // '/login': (context) => LoginPage(),
         // '/signup': (context) => SignUpPage(),
       },

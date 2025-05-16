@@ -76,6 +76,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
     // ... same logic as before ...
 
     Navigator.pop(context);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Updated successfully!'),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   @override

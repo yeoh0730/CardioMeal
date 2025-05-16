@@ -153,7 +153,8 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
   // Toggle the favorite status of the recipe
   Future<void> _toggleFavorite() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return; // Optionally, prompt login
+    if (user == null) return;
+
     final favDocRef = FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
@@ -161,22 +162,49 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
         .doc(widget.recipeId);
 
     if (isFavorited) {
-      // Remove favorite
       await favDocRef.delete();
       setState(() {
         isFavorited = false;
       });
+
+      // ❗ Show removed confirmation
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Successfully removed from My Favourites.'),
+          backgroundColor: Colors.grey[800],
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          duration: Duration(seconds: 2),
+        ),
+      );
     } else {
-      // Add favorite
       await favDocRef.set({
         'addedAt': FieldValue.serverTimestamp(),
-        // Optionally store more fields, like recipe title or image.
       });
       setState(() {
         isFavorited = true;
       });
+
+      // ✅ Show added confirmation
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Successfully added to My Favourites!'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'View',
+            textColor: Colors.white,
+            onPressed: () {
+              Navigator.pushNamed(context, '/favoriteRecipes'); // Make sure this route is defined
+            },
+          ),
+        ),
+      );
     }
   }
+
 
   /// Converts the "Images" field, which might be a string or list, into a List of URLs.
   List<String> _cleanImageUrls(dynamic imagesField) {
@@ -506,17 +534,64 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                                   totalTime: recipe["TotalTime"]?.toString() ?? "N/A",
                                   imageUrl: recipe["Images"]?.toString() ?? "",
                                   recipeId: recipe["RecipeId"]?.toString() ?? "",
-                                  isFavorited: false, // Optional: update if you have favorite tracking
-                                  onFavoriteTap: () {},
-                                  onCardTap: () {
-                                    Navigator.push(
+                                  isFavorited: recipe["isFavorited"] == true, // ✅ use dynamic value
+                                  onFavoriteTap: () async {
+                                    final user = FirebaseAuth.instance.currentUser;
+                                    if (user == null) return;
+
+                                    final recipeId = recipe["RecipeId"].toString();
+                                    final favDocRef = FirebaseFirestore.instance
+                                        .collection('users')
+                                        .doc(user.uid)
+                                        .collection('favorites')
+                                        .doc(recipeId);
+
+                                    final isCurrentlyFavorited = recipe["isFavorited"] == true;
+
+                                    if (isCurrentlyFavorited) {
+                                      await favDocRef.delete();
+                                    } else {
+                                      await favDocRef.set({'addedAt': FieldValue.serverTimestamp()});
+                                    }
+
+                                    setState(() {
+                                      recipe["isFavorited"] = !isCurrentlyFavorited;
+                                    });
+
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          isCurrentlyFavorited
+                                              ? 'Successfully removed from My Favourites.'
+                                              : 'Successfully added to My Favourites!',
+                                        ),
+                                        backgroundColor: isCurrentlyFavorited ? Colors.grey[800] : Colors.green,
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                        duration: const Duration(seconds: 2),
+                                        action: !isCurrentlyFavorited
+                                            ? SnackBarAction(
+                                          label: 'View',
+                                          textColor: Colors.white,
+                                          onPressed: () {
+                                            Navigator.pushNamed(context, '/favoriteRecipes');
+                                          },
+                                        )
+                                            : null,
+                                      ),
+                                    );
+                                  },
+                                  onCardTap: () async {
+                                    await Navigator.push(
                                       context,
                                       MaterialPageRoute(
                                         builder: (_) => RecipeDetailPage(recipeId: recipe["RecipeId"].toString()),
                                       ),
                                     );
+                                    setState(() {}); // ✅ refresh after returning if needed
                                   },
                                 );
+
                               },
                             ),
                           ],

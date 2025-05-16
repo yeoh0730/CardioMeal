@@ -224,7 +224,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       _dividerLine(),
                       _buildOption(
                         icon: Icons.favorite_border,
-                        title: "Favourite Recipes",
+                        title: "My Favourites",
                         onTap: () {
                           Navigator.push(
                             context,

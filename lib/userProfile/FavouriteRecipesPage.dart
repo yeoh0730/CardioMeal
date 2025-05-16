@@ -110,6 +110,17 @@ class _FavoriteRecipesPageState extends State<FavoriteRecipesPage> {
       _favoriteRecipesFuture = _fetchFavoriteRecipes();
       userFavorites.remove(recipeId);
     });
+
+    // ❗ Show removed confirmation
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Successfully removed from My Favourites.'),
+        backgroundColor: Colors.grey[800],
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -118,7 +129,7 @@ class _FavoriteRecipesPageState extends State<FavoriteRecipesPage> {
       backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
         backgroundColor: const Color(0xFFF8F8F8),
-        title: const Text("Favorite Recipes"),
+        title: const Text("My Favourites"),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),

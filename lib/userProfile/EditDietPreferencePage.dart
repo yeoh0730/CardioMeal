@@ -81,6 +81,16 @@ class _EditDietPreferencePageState extends State<EditDietPreferencePage> {
       });
       Navigator.pop(context, true);
     }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Updated successfully!'),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   void _showTooltip(BuildContext context, GlobalKey key, String message) {
@@ -174,7 +184,7 @@ class _EditDietPreferencePageState extends State<EditDietPreferencePage> {
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
-          title: const Text("Edit Diet Preferences"),
+          title: const Text("Edit Dietary Preferences"),
           backgroundColor: Colors.white,
           elevation: 0,
           scrolledUnderElevation: 0,

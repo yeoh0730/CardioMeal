@@ -81,7 +81,7 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
   // Toggle a recipe's favorite status
   Future<void> _toggleFavorite(String recipeId) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return; // handle not logged in if needed
+    if (user == null) return;
 
     final favDocRef = FirebaseFirestore.instance
         .collection('users')
@@ -89,20 +89,47 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
         .collection('favorites')
         .doc(recipeId);
 
-    // If it’s already in favorites, remove it; otherwise add it
     if (userFavorites.contains(recipeId)) {
       await favDocRef.delete();
       setState(() {
         userFavorites.remove(recipeId);
       });
+
+      // ❗ Show removed confirmation
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Successfully removed from My Favourites.'),
+          backgroundColor: Colors.grey[800],
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          duration: Duration(seconds: 2),
+        ),
+      );
     } else {
       await favDocRef.set({
         'addedAt': FieldValue.serverTimestamp(),
-        // Optionally store more fields, e.g. recipe title or image
       });
       setState(() {
         userFavorites.add(recipeId);
       });
+
+      // ✅ Show added confirmation
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Sucessfully added to My Favourites!'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          duration: Duration(seconds: 2),
+          action: SnackBarAction(
+            label: 'View',
+            textColor: Colors.white,
+            onPressed: () {
+              Navigator.pushNamed(context, '/favoriteRecipes'); // Make sure this route is defined
+            },
+          ),
+        ),
+      );
     }
   }
 

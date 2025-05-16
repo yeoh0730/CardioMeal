@@ -330,6 +330,16 @@ class _DashboardPageState extends State<DashboardPage> {
     await calculateAndStoreNutrientLimits(nutrientData);
 
     _fetchHealthHistory(); // Refresh chart
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Successfully updated $metricKey!'),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   Widget _buildMetricGraph(String title, String metricKey) {

@@ -48,59 +48,57 @@ class _SelectRecipesPageState extends State<SelectRecipesPage> {
   /// Returns the entered serving size, or null if canceled.
   Future<double?> _showLogMealDialog(Map<String, dynamic> recipe) async {
     TextEditingController servingController = TextEditingController(text: "1");
+    DateTime _selectedDate = DateTime.now(); // not used, but included for consistency
 
     return showDialog<double>(
       context: context,
       builder: (context) {
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           backgroundColor: Colors.white,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 28.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  "Enter the serving size",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  recipe["Name"] ?? "Selected Recipe",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 15, color: Colors.grey[600]),
-                ),
-                const SizedBox(height: 20),
-
-                // Input Field
-                TextField(
-                  controller: servingController,
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16),
-                  decoration: InputDecoration(
-                    labelText: "Serving Size",
-                    labelStyle: TextStyle(color: Colors.grey),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.red),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  "Enter Serving Size",
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // Buttons
+                Text(
+                  recipe["Name"] ?? "Selected Recipe",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16, color: Colors.black54),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: servingController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    hintText: "e.g., 3",
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  ),
+                ),
+                const SizedBox(height: 24),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
                       child: const Text("Cancel", style: TextStyle(color: Colors.red)),
                     ),
+                    const SizedBox(width: 8),
                     ElevatedButton(
                       onPressed: () {
                         double serving = double.tryParse(servingController.text) ?? 1.0;
@@ -111,7 +109,6 @@ class _SelectRecipesPageState extends State<SelectRecipesPage> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                       ),
                       child: const Text("Log Meal", style: TextStyle(color: Colors.white)),
                     ),
@@ -236,6 +233,18 @@ class _SelectRecipesPageState extends State<SelectRecipesPage> {
                         double? serving = await _showLogMealDialog(recipe);
                         if (serving != null) {
                           await _logRecipe(recipe, serving);
+
+                          // Show success message
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text("Meal logged successfully!"),
+                              backgroundColor: Colors.green,
+                              behavior: SnackBarBehavior.floating,
+                              duration: Duration(seconds: 2),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          );
+
                           Navigator.pop(context, true);
                         }
                       },
