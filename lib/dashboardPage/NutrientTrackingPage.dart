@@ -231,7 +231,7 @@ class _NutrientTabState extends State<NutrientTab> {
 
     double interval = maxCalorieY > 3000
         ? 500
-        : maxCalorieY > 1500
+        : maxCalorieY > 1300
         ? 300
         : maxCalorieY > 1000
         ? 100
@@ -279,11 +279,11 @@ class _NutrientTabState extends State<NutrientTab> {
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
-                        reservedSize: 33,
+                        reservedSize: 30,
                         interval: interval,
                         getTitlesWidget: (value, _) => Text(
                           value.toInt().toString(),
-                          style: const TextStyle(fontSize: 11, color: Colors.black87),
+                          style: const TextStyle(fontSize: 9, color: Colors.black87),
                         ),
                       ),
                     ),
@@ -296,7 +296,7 @@ class _NutrientTabState extends State<NutrientTab> {
                           if (index < 0 || index >= dates.length) return const SizedBox.shrink();
                           return Text(
                             DateFormat('dd/MM').format(dates[index]),
-                            style: const TextStyle(fontSize: 11, color: Colors.black87),
+                            style: const TextStyle(fontSize: 9, color: Colors.black87),
                           );
                         },
                       ),
@@ -429,7 +429,7 @@ class _NutrientTabState extends State<NutrientTab> {
                         if (index < 0 || index >= dates.length) return const SizedBox.shrink();
                         return Text(
                           DateFormat('dd/MM').format(dates[index]),
-                          style: const TextStyle(fontSize: 11, color: Colors.black87),
+                          style: const TextStyle(fontSize: 9, color: Colors.black87),
                         );
                       },
                     ),
@@ -437,7 +437,7 @@ class _NutrientTabState extends State<NutrientTab> {
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 33,
+                      reservedSize: 30,
                       interval: interval,
                       getTitlesWidget: (value, _) {
                         if (value % interval != 0) return const SizedBox.shrink();
@@ -445,7 +445,7 @@ class _NutrientTabState extends State<NutrientTab> {
                           padding: const EdgeInsets.only(right: 4),
                           child: Text(
                             value.toInt().toString(),
-                            style: const TextStyle(fontSize: 11, color: Colors.black87),
+                            style: const TextStyle(fontSize: 9, color: Colors.black87),
                             textAlign: TextAlign.right,
                           ),
                         );

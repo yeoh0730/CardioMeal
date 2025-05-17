@@ -1,10 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../LandingPage.dart';
 import 'EditProfilePage.dart';
 import 'EditDietPreferencePage.dart';
 import 'FavouriteRecipesPage.dart';
-import '../signUp/LoginPage.dart';
 import '../models/custom_button.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -391,7 +391,7 @@ class _ProfilePageState extends State<ProfilePage> {
     await FirebaseAuth.instance.signOut();
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => LoginPage()),
+      MaterialPageRoute(builder: (context) => LandingPage()),
     );
   }
 }

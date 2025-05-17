@@ -11,8 +11,8 @@ import 'signUp/LoginPage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:project/userProfile/FavouriteRecipesPage.dart'; // adjust path if needed
 
-// import 'LandingPage.dart';
-// import 'signUp/SignUpPage.dart';
+import 'LandingPage.dart';
+import 'signUp/SignUpPage.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Ensure Flutter bindings are initialized
@@ -35,8 +35,8 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => AuthenticationWrapper(),
         '/favoriteRecipes': (context) => FavoriteRecipesPage(),
-        // '/login': (context) => LoginPage(),
-        // '/signup': (context) => SignUpPage(),
+        '/login': (context) => LoginPage(),
+        '/signup': (context) => SignUpPage(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/recipeDetail') {
@@ -64,8 +64,8 @@ class AuthenticationWrapper extends StatelessWidget {
 
         // 2) If there's no Auth user, go to Login
         if (!authSnapshot.hasData || authSnapshot.data == null) {
-          // return const LandingPage();
-          return LoginPage();
+          return const LandingPage();
+          // return LoginPage();
         }
 
         // 3) If we have an Auth user, do a Firestore check:

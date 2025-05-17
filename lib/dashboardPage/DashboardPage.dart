@@ -20,21 +20,21 @@ class _DashboardPageState extends State<DashboardPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  final Map<String, Color> metricColors = {
-    "Cholesterol": Color(0xFFFF6B6B),    // coralRed
-    "SystolicBP": Color(0xFFFFB347),     // amberOrange
-    "DiastolicBP": Color(0xFF52B788),    // forestGreen
-    "BloodGlucose": Color(0xFF4D96FF),   // seaBlue
-    "HeartRate": Color(0xFF9D4EDD),      // violetPurple
-  };
-
   // final Map<String, Color> metricColors = {
-  //   "Cholesterol": Color(0xFF118AB2),     // dustyBlue
-  //   "SystolicBP": Color(0xFFFFD166),      // mangoYellow
-  //   "DiastolicBP": Color(0xFF06D6A0),     // skyTeal
-  //   "BloodGlucose": Color(0xFF735DFF),    // softIndigo
-  //   "HeartRate": Color(0xFFEF476F),       // blushPink
+  //   "Cholesterol": Color(0xFFFF6B6B),    // coralRed
+  //   "SystolicBP": Color(0xFFFFB347),     // amberOrange
+  //   "DiastolicBP": Color(0xFF52B788),    // forestGreen
+  //   "BloodGlucose": Color(0xFF4D96FF),   // seaBlue
+  //   "HeartRate": Color(0xFF9D4EDD),      // violetPurple
   // };
+
+  final Map<String, Color> metricColors = {
+    "Cholesterol": Color(0xFF118AB2),     // dustyBlue
+    "SystolicBP": Color(0xFFFFD166),      // mangoYellow
+    "DiastolicBP": Color(0xFF06D6A0),     // skyTeal
+    "BloodGlucose": Color(0xFF735DFF),    // softIndigo
+    "HeartRate": Color(0xFFEF476F),       // blushPink
+  };
 
   // final Map<String, Color> metricColors = {
   //   "Cholesterol": Color(0xFFB08968),   // roseBrown

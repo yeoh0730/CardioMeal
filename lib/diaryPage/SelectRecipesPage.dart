@@ -16,6 +16,7 @@ class _SelectRecipesPageState extends State<SelectRecipesPage> {
   List<Map<String, dynamic>> _recipes = [];
   List<Map<String, dynamic>> _filteredRecipes = [];
   TextEditingController _searchController = TextEditingController();
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -24,6 +25,8 @@ class _SelectRecipesPageState extends State<SelectRecipesPage> {
   }
 
   Future<void> _fetchRecipes() async {
+    setState(() => _isLoading = true);
+
     QuerySnapshot snapshot =
     await FirebaseFirestore.instance.collection('recipes').get();
     List<Map<String, dynamic>> fetchedRecipes =
@@ -32,6 +35,7 @@ class _SelectRecipesPageState extends State<SelectRecipesPage> {
     setState(() {
       _recipes = fetchedRecipes;
       _filteredRecipes = fetchedRecipes;
+      _isLoading = false;
     });
   }
 
@@ -187,7 +191,11 @@ class _SelectRecipesPageState extends State<SelectRecipesPage> {
         title: const Text("Log Meal"),
         scrolledUnderElevation: 0,
       ),
-      body: Padding(
+      body: _isLoading
+          ? const Center(
+        child: CircularProgressIndicator(color: Colors.red),
+      )
+      : Padding(
         padding:
         const EdgeInsets.only(left: 16.0, right: 16.0, top: 0, bottom: 16.0),
         child: Column(
