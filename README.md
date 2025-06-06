@@ -1,6 +1,6 @@
-# project
+# CardioMeal
 
-A new Flutter project.
+CardioMeal is a personalized nutrition and recipe recommendation app designed to support cardiovascular health. By analyzing users' health metrics, dietary preferences, and recent meal logs, CardioMeal suggests heart-friendly recipes tailored to individual risk profiles. The application is built using Flutter (for the mobile frontend), Firebase (for authentication and cloud data storage), and Flask (for the AI-powered recommendation backend).
 
 ## Getting Started
 
