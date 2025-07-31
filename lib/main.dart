@@ -9,24 +9,92 @@ import 'package:project/recipePage/RecipePage.dart';
 import 'package:project/recipePage/RecipeDetailPage.dart';
 import 'signUp/LoginPage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:project/userProfile/FavouriteRecipesPage.dart'; // adjust path if needed
-
+import 'package:project/userProfile/FavouriteRecipesPage.dart';
 import 'LandingPage.dart';
 import 'signUp/SignUpPage.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // Ensure Flutter bindings are initialized
-  await Firebase.initializeApp(); // Initialize Firebase
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  const AndroidInitializationSettings initializationSettingsAndroid =
+  AndroidInitializationSettings('@mipmap/ic_launcher'); // Make sure this exists
+
+  final InitializationSettings initializationSettings =
+  InitializationSettings(android: initializationSettingsAndroid);
+
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark, // or dark
+      statusBarIconBrightness: Brightness.dark,
     ),
   );
+
   runApp(MyApp());
 }
 
-class MyApp extends StatelessWidget {
+
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+FlutterLocalNotificationsPlugin();
+
+// Handle background messages
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  // You can log or handle background data here if needed
+}
+
+class MyApp extends StatefulWidget {
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    _initFCM();
+  }
+
+  Future<void> _initFCM() async {
+    await FirebaseMessaging.instance.requestPermission();
+
+    FirebaseMessaging.instance.getToken().then((token) async {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null && token != null) {
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+          'fcmToken': token,
+        });
+      }
+    });
+
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      RemoteNotification? notification = message.notification;
+      AndroidNotification? android = message.notification?.android;
+
+      if (notification != null && android != null) {
+        flutterLocalNotificationsPlugin.show(
+          notification.hashCode,
+          notification.title,
+          notification.body,
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'default_channel',
+              'General',
+              importance: Importance.max,
+              priority: Priority.high,
+            ),
+          ),
+        );
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -42,7 +110,7 @@ class MyApp extends StatelessWidget {
         if (settings.name == '/recipeDetail') {
           final recipeId = settings.arguments as String;
           return MaterialPageRoute(
-            builder: (context) => RecipeDetailPage(recipeId: recipeId), // ✅ Pass recipeId correctly
+            builder: (context) => RecipeDetailPage(recipeId: recipeId),
           );
         }
         return null;
@@ -50,6 +118,7 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
 
 class AuthenticationWrapper extends StatelessWidget {
   @override

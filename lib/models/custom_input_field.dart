@@ -27,7 +27,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
       children: [
         Text(
           widget.labelText,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 15),
         Focus(
@@ -47,10 +47,10 @@ class _CustomInputFieldState extends State<CustomInputField> {
               labelStyle: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w400,
-                color: _isFocused ? Colors.black : Colors.black.withAlpha((0.4 * 255).toInt()), // Opaque hint text
+                color: _isFocused ? Colors.red : Colors.black.withAlpha((0.4 * 255).toInt()), // Opaque hint text
               ),
               focusedBorder: OutlineInputBorder(
-                borderSide: const BorderSide(color: Colors.black, width: 2.0), // **Bold black border when focused**
+                borderSide: const BorderSide(color: Colors.red, width: 2.0), // **Bold black border when focused**
                 borderRadius: BorderRadius.circular(8.0),
               ),
               enabledBorder: OutlineInputBorder(

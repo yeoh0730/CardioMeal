@@ -178,56 +178,71 @@ class _EditDietPreferencePageState extends State<EditDietPreferencePage> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onTap: _removeTooltip,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          title: const Text("Edit Dietary Preferences"),
+    return WillPopScope( // ✅ Dismiss tooltip when navigating back
+      onWillPop: () async {
+        if (_tooltipVisible) {
+          _removeTooltip();
+          return false;
+        }
+        return true;
+      },
+      child: GestureDetector( // ✅ Dismiss tooltip on outside tap
+        behavior: HitTestBehavior.translucent,
+        onTap: _removeTooltip,
+        child: Scaffold(
           backgroundColor: Colors.white,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text("Describe your preference in your own words:",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _freePreferenceController,
-                decoration: InputDecoration(
-                  hintText: "e.g., I prefer dairy-free dishes or meals that contain salmon.",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.0),
+          appBar: AppBar(
+            title: const Text("Edit Dietary Preferences"),
+            backgroundColor: Colors.white,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Describe your preference in your own words:",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _freePreferenceController,
+                  decoration: InputDecoration(
+                    hintText: "e.g., I prefer dairy-free dishes or meals that contain salmon.",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                  ),
+                  maxLines: null,
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 20),
+                const Text("Or select from the list below:",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: NotificationListener<ScrollNotification>( // ✅ Dismiss tooltip on scroll
+                    onNotification: (scrollNotification) {
+                      if (_tooltipVisible) _removeTooltip();
+                      return false;
+                    },
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: _dietaryOptions.map(_buildCheckbox).toList(),
+                      ),
+                    ),
                   ),
                 ),
-                maxLines: null,
-                style: const TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 20),
-              const Text("Or select from the list below:",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: _dietaryOptions.map(_buildCheckbox).toList(),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: CustomButton(
+                    text: "Save Changes",
+                    onPressed: _saveDietPreferences,
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: CustomButton(
-                  text: "Save Changes",
-                  onPressed: _saveDietPreferences,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

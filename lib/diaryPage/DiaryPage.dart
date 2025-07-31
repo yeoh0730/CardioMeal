@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'NotificationHistoryPage.dart';
 import 'SelectRecipesPage.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
@@ -41,6 +42,21 @@ class _DiaryPageState extends State<DiaryPage> {
     super.initState();
     _fetchUserNutrientLimitsForDate();
     _fetchLoggedMeals();
+  }
+
+  Future<void> _addExceededNotificationToFirestore(String body) async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(user.uid)
+        .collection("notifications")
+        .add({
+      "title": "Nutrient Limit Exceeded",
+      "body": body,
+      "timestamp": FieldValue.serverTimestamp(),
+    });
   }
 
   Future<void> _fetchUserNutrientLimitsForDate() async {
@@ -200,49 +216,53 @@ class _DiaryPageState extends State<DiaryPage> {
   /// Recompute how many calories, carbs, sodium, and fat the user has consumed so far,
   /// taking into account the serving size for each food item.
   void _recalculateConsumedTotals() {
-    double totalCals = 0;
-    double totalCarbs = 0;
-    double totalSodium = 0;
-    double totalFat = 0;
+    double totalCals = 0, totalCarbs = 0, totalSodium = 0, totalFat = 0;
 
     _selectedMeals.forEach((mealType, mealList) {
       for (var recipe in mealList) {
-        // Use a default serving size of 1 if not provided.
         double servingSize = (recipe["servingSize"] as num?)?.toDouble() ?? 1.0;
-
-        totalCals   += (recipe["calories"] ?? 0) * servingSize;
-        totalCarbs  += (recipe["carbs"]    ?? 0) * servingSize;
-        totalSodium += (recipe["sodium"]   ?? 0) * servingSize;
-        totalFat    += (recipe["fat"]      ?? 0) * servingSize;
+        totalCals += (recipe["calories"] ?? 0) * servingSize;
+        totalCarbs += (recipe["carbs"] ?? 0) * servingSize;
+        totalSodium += (recipe["sodium"] ?? 0) * servingSize;
+        totalFat += (recipe["fat"] ?? 0) * servingSize;
       }
     });
 
     setState(() {
       _consumedCalories = totalCals;
-      _consumedCarbs    = totalCarbs;
-      _consumedSodium   = totalSodium;
-      _consumedFat      = totalFat;
+      _consumedCarbs = totalCarbs;
+      _consumedSodium = totalSodium;
+      _consumedFat = totalFat;
     });
 
     String todayKey = DateFormat('yyyy-MM-dd').format(_selectedDate);
     if (!(_hasShownWarningForDate[todayKey] ?? false)) {
       _notificationQueue.clear();
 
+      Map<String, double> exceeded = {};
       if (_consumedCalories > (_userCalories ?? 0)) {
-        double exceeded = _consumedCalories - (_userCalories ?? 0);
-        _queueTopNotification("Calorie intake exceeded by ${exceeded.toStringAsFixed(0)} kcal");
+        exceeded["Calories"] = _consumedCalories - (_userCalories ?? 0);
+        _queueTopNotification("Calorie intake exceeded by ${exceeded["Calories"]!.toStringAsFixed(0)} kcal");
       }
       if (_consumedCarbs > (_userCarbLimit ?? 0)) {
-        double exceeded = _consumedCarbs - (_userCarbLimit ?? 0);
-        _queueTopNotification("Carbohydrate intake exceeded by ${exceeded.toStringAsFixed(0)} g");
+        exceeded["Carbohydrates"] = _consumedCarbs - (_userCarbLimit ?? 0);
+        _queueTopNotification("Carbohydrate intake exceeded by ${exceeded["Carbohydrates"]!.toStringAsFixed(0)} g");
       }
       if (_consumedSodium > (_userSodiumLimit ?? 0)) {
-        double exceeded = _consumedSodium - (_userSodiumLimit ?? 0);
-        _queueTopNotification("Sodium intake exceeded by ${exceeded.toStringAsFixed(0)} mg");
+        exceeded["Sodium"] = _consumedSodium - (_userSodiumLimit ?? 0);
+        _queueTopNotification("Sodium intake exceeded by ${exceeded["Sodium"]!.toStringAsFixed(0)} mg");
       }
       if (_consumedFat > (_userFatLimit ?? 0)) {
-        double exceeded = _consumedFat - (_userFatLimit ?? 0);
-        _queueTopNotification("Fat intake exceeded by ${exceeded.toStringAsFixed(0)} g");
+        exceeded["Fat"] = _consumedFat - (_userFatLimit ?? 0);
+        _queueTopNotification("Fat intake exceeded by ${exceeded["Fat"]!.toStringAsFixed(0)} g");
+      }
+
+      // Save notification to Firestore (if any exceeded)
+      if (exceeded.isNotEmpty) {
+        String body = exceeded.entries
+            .map((e) => "${e.key} intake exceeded by ${e.value.toStringAsFixed(0)}")
+            .join("; ");
+        _addExceededNotificationToFirestore(body);
       }
 
       _hasShownWarningForDate[todayKey] = true;
@@ -639,15 +659,29 @@ class _DiaryPageState extends State<DiaryPage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              isToday ? "Today" : DateFormat('yyyy-MM-dd').format(_selectedDate),
+              isToday ? "Today" : DateFormat('yyyy, MMM dd').format(_selectedDate),
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
-            IconButton(
-              icon: const Icon(Icons.calendar_today, color: Colors.black),
-              onPressed: _pickDate,
-            ),
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.calendar_today, color: Colors.black),
+                  onPressed: _pickDate,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.notifications, color: Colors.black),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => NotificationHistoryPage()),
+                    );
+                  },
+                ),
+              ],
+            )
           ],
         ),
+
 
         const SizedBox(height: 8),
 
@@ -667,6 +701,33 @@ class _DiaryPageState extends State<DiaryPage> {
         _buildMealSection('Dinner', Colors.blue),
         _buildMealSection('Snacks', Colors.purple),
       ],
+    );
+  }
+
+  void _showDeleteConfirmationDialog(String mealType, Map<String, dynamic> foodItem) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: const Text("Delete Food Entry"),
+          content: const Text("Are you sure you want to remove this food from your diary?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel", style: TextStyle(color: Colors.red)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _deleteFood(mealType, foodItem);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text("Delete", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -771,12 +832,9 @@ class _DiaryPageState extends State<DiaryPage> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                // Display scaled nutrient values + serving size
-                                    "Serving size: $servingSizeStr\n"
-                                    "Calories: ${totalCals.toStringAsFixed(0)} | "
-                                    "Sodium: ${totalSodium.toStringAsFixed(0)} | "
-                                    "Fat: ${totalFat.toStringAsFixed(0)} | "
-                                    "Carbs: ${totalCarbs.toStringAsFixed(0)}",
+                                "Serving size: $servingSizeStr\n"
+                                    "Calories: ${totalCals.toStringAsFixed(0)} | Sodium: ${totalSodium.toStringAsFixed(0)}\n"
+                                    "Fat: ${totalFat.toStringAsFixed(0)} | Carbs: ${totalCarbs.toStringAsFixed(0)}",
                                 style: const TextStyle(fontSize: 12, color: Colors.grey),
                               ),
                             ],
@@ -785,7 +843,7 @@ class _DiaryPageState extends State<DiaryPage> {
                         // Delete button (aligned to the right)
                         IconButton(
                           icon: const Icon(Icons.delete, color: Colors.redAccent),
-                          onPressed: () => _deleteFood(mealTitle, recipe),
+                          onPressed: () => _showDeleteConfirmationDialog(mealTitle, recipe),
                         ),
                       ],
                     ),

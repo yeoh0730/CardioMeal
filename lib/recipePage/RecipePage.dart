@@ -301,7 +301,7 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               if (isSelected) ...[
-                                const Icon(Icons.check, size: 16, color: Colors.white),
+                                // const Icon(Icons.check, size: 16, color: Colors.white),
                                 const SizedBox(width: 4),
                               ],
                               Text(mealType),
@@ -463,7 +463,8 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
 
     return ListView(
       padding: const EdgeInsets.all(16),
-      children: _recommendedMealCategories.map((category) {
+      children: List.generate(_recommendedMealCategories.length, (index) {
+        final category = _recommendedMealCategories[index];
         final categoryList = _recommendedByCategory[category] ?? [];
         if (categoryList.isEmpty) {
           return const SizedBox.shrink();
@@ -489,7 +490,8 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
                         MaterialPageRoute(
                           builder: (_) => CategoryRecipesPage(
                             categoryTitle: category,
-                            recipes: categoryList, category: '',
+                            recipes: categoryList,
+                            category: '',
                           ),
                         ),
                       );
@@ -514,11 +516,11 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: categoryList.length,
-                itemBuilder: (context, index) {
-                  final recipe = categoryList[index];
+                itemBuilder: (context, itemIndex) {
+                  final recipe = categoryList[itemIndex];
                   final recipeId = (recipe["RecipeId"] ?? "").toString();
                   final isFavorited = userFavorites.contains(recipeId);
-                  final isLast = (index == categoryList.length - 1);
+                  final isLast = (itemIndex == categoryList.length - 1);
 
                   return Container(
                     width: 160,
@@ -543,12 +545,16 @@ class _RecipePageState extends State<RecipePage> with SingleTickerProviderStateM
                 },
               ),
             ),
-            const SizedBox(height: 16),
+
+            // Only add spacing if not the last category
+            if (index < _recommendedMealCategories.length - 1)
+              const SizedBox(height: 5),
           ],
         );
-      }).toList(),
+      }),
     );
   }
+
 
 
   // ================================

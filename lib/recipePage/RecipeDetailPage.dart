@@ -22,6 +22,8 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
   bool isLoading = true;
   bool isFavorited = false; // Track favorite status
 
+  bool showAllTags = false;
+
   // Controller for PageView (images carousel)
   final PageController _pageController = PageController();
 
@@ -249,6 +251,26 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
     return words.join(" ");
   }
 
+  Widget _buildTagChip(String keyword) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade100,
+        borderRadius: BorderRadius.circular(25),
+      ),
+      child: Text(
+        keyword,
+        style: const TextStyle(
+          color: Colors.black87,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -277,6 +299,30 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
 
     final dynamic keywordsField = recipeDetails?["Keywords"];
     final List<String> keywordsList = (keywordsField is List<String>) ? keywordsField : <String>[];
+
+    final filteredTags = keywordsList.where((k) => allowedTags.contains(k)).toList();
+    final int tagDisplayLimit = 6;
+    final List<String> visibleTags = showAllTags ? filteredTags : filteredTags.take(tagDisplayLimit).toList();
+
+    final tagChips = filteredTags.map(_buildTagChip).toList();
+
+    Widget tagSection = AnimatedCrossFade(
+      crossFadeState: showAllTags ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+      duration: const Duration(milliseconds: 300),
+      firstChild: Container(
+        constraints: const BoxConstraints(maxHeight: 42), // limits to one row
+        child: Wrap(
+          spacing: 0,
+          runSpacing: 8,
+          children: tagChips,
+        ),
+      ),
+      secondChild: Wrap(
+        spacing: 0,
+        runSpacing: 8,
+        children: tagChips,
+      ),
+    );
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -419,39 +465,40 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                       const SizedBox(height: 16),
 
                       // Filtered Tags
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: keywordsList
-                              .where((keyword) => allowedTags.contains(keyword))
-                              .map((keyword) {
-                            return Container(
-                              margin: const EdgeInsets.only(right: 8),
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.orange.shade100,
-                                borderRadius: BorderRadius.circular(25),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          tagSection,
+                          if (filteredTags.length > tagDisplayLimit)
+                            TextButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  showAllTags = !showAllTags;
+                                });
+                              },
+                              icon: Icon(
+                                showAllTags ? Icons.expand_less : Icons.expand_more,
+                                color: Colors.orange,
                               ),
-                              child: Text(
-                                keyword,
-                                style: const TextStyle(
-                                  color: Colors.black87,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                              label: Text(
+                                showAllTags ? 'Show less' : 'Show more',
+                                style: const TextStyle(color: Colors.orange),
                               ),
-                            );
-                          }).toList(),
-                        ),
+                            ),
+                        ],
                       ),
+
+
                       const SizedBox(height: 15),
 
                       // Description
-                      Text(
-                        recipeDetails!["Description"],
-                        style: const TextStyle(fontSize: 15, color: Colors.black54),
-                      ),
-                      const SizedBox(height: 20),
+                      if ((recipeDetails!["Description"] ?? "").toString().trim().isNotEmpty) ...[
+                        Text(
+                          recipeDetails!["Description"],
+                          style: const TextStyle(fontSize: 15, color: Colors.black54),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
 
                       // Ingredients
                       const Text("Ingredients", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -506,6 +553,8 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                       _buildNutritionRow("Fat", "${recipeDetails?["FatContent"]} g"),
                       _buildNutritionRow("Carbs", "${recipeDetails?["CarbohydrateContent"]} g"),
                       _buildNutritionRow("Protein", "${recipeDetails?["ProteinContent"]} g"),
+                      _buildNutritionRow("Fiber", "${recipeDetails?["FiberContent"]} g"),
+                      _buildNutritionRow("Sugar", "${recipeDetails?["SugarContent"]} g"),
                       _buildNutritionRow("Sodium", "${recipeDetails?["SodiumContent"]} mg"),
                       _buildNutritionRow("Cholesterol", "${recipeDetails?["CholesterolContent"]} mg"),
                       const SizedBox(height: 30),

@@ -4,8 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ApiService {
-  static const String baseUrl = "https://recipes-recommender-model.onrender.com"; // Adjust if hosted online
+  // static const String baseUrl = "https://recipes-recommender-model.onrender.com"; // Adjust if hosted online
   // static const String baseUrl = "http://10.0.2.2:5000"; // Adjust if hosted online
+  static const String baseUrl = "https://web-production-f6104.up.railway.app";
 
   static Future<Map<String, dynamic>?> fetchUserData() async {
     User? user = FirebaseAuth.instance.currentUser;

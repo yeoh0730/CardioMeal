@@ -261,7 +261,15 @@ class _NutrientTabState extends State<NutrientTab> {
                 LineChartData(
                   minY: 0,
                   maxY: maxCalorieY,
-                  borderData: FlBorderData(show: false),
+                  borderData: FlBorderData(
+                    show: true,
+                    border: const Border(
+                      left: BorderSide(color: Colors.grey, width: 1),   // Y-axis
+                      bottom: BorderSide(color: Colors.grey, width: 1), // X-axis
+                      right: BorderSide(color: Colors.transparent),
+                      top: BorderSide(color: Colors.transparent),
+                    ),
+                  ),
                   gridData: FlGridData(
                     show: true,
                     drawVerticalLine: true,
@@ -404,7 +412,15 @@ class _NutrientTabState extends State<NutrientTab> {
               LineChartData(
                 minY: 0,
                 maxY: maxY,
-                borderData: FlBorderData(show: false),
+                borderData: FlBorderData(
+                  show: true,
+                  border: const Border(
+                    left: BorderSide(color: Colors.grey, width: 1),   // Y-axis
+                    bottom: BorderSide(color: Colors.grey, width: 1), // X-axis
+                    right: BorderSide(color: Colors.transparent),
+                    top: BorderSide(color: Colors.transparent),
+                  ),
+                ),
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: true,

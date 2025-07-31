@@ -228,6 +228,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         _selectedDietaryPreferences.remove(preference);
       } else {
         _selectedDietaryPreferences.add(preference);
+        _freePreferenceController.clear();
       }
     });
   }
@@ -281,161 +282,119 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     );
   }
 
-  // ======== BOTTOM BAR (ONLY NEXT/FINISH BUTTON) ========
-  Widget _buildBottomBar() {
-    return Container(
-      width: double.infinity,
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-      child: Column(
+  // ======== ACTIVITY RADIO TILES ========
+  Widget _buildActivityOption(String title, String description) {
+    return RadioListTile<String>(
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+          const SizedBox(height: 4),
+          Text(description, style: const TextStyle(fontSize: 14, color: Colors.black54)),
+        ],
+      ),
+      value: title,
+      groupValue: _selectedActivityLevel,
+      activeColor: Colors.red,
+      onChanged: (String? value) {
+        if (value != null) {
+          setState(() => _selectedActivityLevel = value);
+        }
+      },
+      contentPadding: const EdgeInsets.symmetric(vertical: 2),
+    );
+  }
+
+  Widget _buildCheckbox(String title, {String? infoText}) {
+    final GlobalKey iconKey = GlobalKey();
+
+    void _showTooltip() {
+      final renderBox = iconKey.currentContext
+          ?.findRenderObject() as RenderBox?;
+      final overlay = Overlay
+          .of(context)
+          .context
+          .findRenderObject() as RenderBox?;
+      if (renderBox == null || overlay == null) return;
+
+      final position = renderBox.localToGlobal(Offset.zero, ancestor: overlay);
+
+      _dismissTooltip(); // hide any previous tooltip
+
+      _activeTooltip = OverlayEntry(
+        builder: (context) =>
+            Positioned(
+              left: position.dx,
+              top: position.dy + renderBox.size.height + 5,
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  margin: const EdgeInsets.only(top: 4),
+                  constraints: const BoxConstraints(maxWidth: 260),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 8,
+                        offset: Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    infoText ?? "",
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+              ),
+            ),
+      );
+
+      Overlay.of(context).insert(_activeTooltip!);
+    }
+
+    void _toggleTooltip() {
+      if (_activeTooltip != null) {
+        _dismissTooltip();
+      } else {
+        _showTooltip();
+      }
+    }
+
+    return CheckboxListTile(
+      activeColor: Colors.red,
+      controlAffinity: ListTileControlAffinity.trailing,
+      title: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (_errorMessage.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                _errorMessage,
-                style: const TextStyle(
-                  color: Color.fromRGBO(244, 67, 54, 1),
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
+          Text(title),
+          if (infoText != null) ...[
+            const SizedBox(width: 6),
+            GestureDetector(
+              key: iconKey,
+              onTap: _toggleTooltip,
+              child: const Icon(
+                Icons.info_outline,
+                size: 20,
+                color: Colors.red,
               ),
             ),
-          SizedBox(
-            width: double.infinity,
-            child: CustomButton(
-              text: _currentPage < totalSteps - 1 ? "Next" : "Finish",
-              onPressed: _nextPage,
-            ),
-          ),
+          ],
         ],
       ),
+      value: _selectedDietaryPreferences.contains(title),
+      onChanged: (bool? value) {
+        setState(() {
+          _toggleDietaryPreference(title);
+          _dismissTooltip();
+        });
+      },
     );
   }
 
-  // ======== BUILD PAGES ========
-  Widget _buildPage1() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40.0),
-            child: Text(
-              "What Would You Like Us to Call You?",
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
-            ),
-          ),
-          const SizedBox(height: 30),
-          Focus(
-            onFocusChange: (hasFocus) {
-              setState(() {
-                _isFocused = hasFocus;
-              });
-            },
-            child: TextField(
-              controller: _firstNameController,
-              keyboardType: TextInputType.text,
-              style: const TextStyle(
-                color: Colors.black,
-              ),
-              decoration: InputDecoration(
-                labelText: "Enter your first name",
-                labelStyle: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  color: _isFocused
-                      ? Colors.black
-                      : Colors.black.withAlpha((0.4 * 255).toInt()),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Colors.black, width: 2.0),
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Colors.grey, width: 2.0),
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 25, horizontal: 20),
-              ),
-            ),
-          ),
-          const SizedBox(height: 30),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPage2() {
-    int initialIndex = selectedAge - 1;
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const SizedBox(height: 20),
-        const Text(
-          "How Old Are You?",
-          style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
-        ),
-        Expanded(
-          child: ListWheelScrollView.useDelegate(
-            itemExtent: 60,
-            perspective: 0.005,
-            diameterRatio: 1.2,
-            physics: const FixedExtentScrollPhysics(),
-            controller: FixedExtentScrollController(initialItem: initialIndex),
-            onSelectedItemChanged: (value) {
-              setState(() => selectedAge = value + 1);
-            },
-            childDelegate: ListWheelChildBuilderDelegate(
-              builder: (context, index) {
-                final age = index + 1;
-                return Center(
-                  child: Text(
-                    "$age",
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: selectedAge == age ? FontWeight.bold : FontWeight.normal,
-                      color: selectedAge == age ? Colors.red : Colors.grey,
-                    ),
-                  ),
-                );
-              },
-              childCount: 120,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPage3() {
-    return Column(
-      children: [
-        const SizedBox(height: 20),
-        const Text(
-          "What is Your Gender?",
-          style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 30),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 30),
-            children: [
-              _buildGenderOption("Male", "assets/male_icon.png", Colors.blue),
-              const SizedBox(height: 20),
-              _buildGenderOption("Female", "assets/female_icon.png", Colors.pink),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildGenderOption(String label, String imagePath, Color borderColor) {
+    Widget _buildGenderOption(String label, String imagePath, Color borderColor) {
     final bool isSelected = _gender == label;
 
     return GestureDetector(
@@ -479,42 +438,231 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     );
   }
 
+  // ======== BOTTOM BAR (ONLY NEXT/FINISH BUTTON) ========
+  Widget _buildBottomBar() {
+    return Container(
+      width: double.infinity,
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_errorMessage.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                _errorMessage,
+                style: const TextStyle(
+                  color: Color.fromRGBO(244, 67, 54, 1),
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          SizedBox(
+            width: double.infinity,
+            child: CustomButton(
+              text: _currentPage < totalSteps - 1 ? "Next" : "Finish",
+              onPressed: _nextPage,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuestionPage({
+    required String title,
+    required String caption,
+    required Widget child,
+  }) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Text(caption, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+          const SizedBox(height: 24),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPage1() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "What Would You Like Us to Call You?",
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 24),
+          TextField(
+            controller: _firstNameController,
+            decoration: InputDecoration(
+              labelText: "Enter your first name",
+              floatingLabelStyle: const TextStyle(
+                color: Colors.red, // 🔴 This changes label color when focused
+                fontWeight: FontWeight.w500,
+              ),
+              labelStyle: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+                color: _isFocused ? Colors.black : Colors.black.withAlpha((0.4 * 255).toInt()), // Opaque hint text
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              focusedBorder: OutlineInputBorder( // Red border when focused
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: Colors.red,
+                  width: 2.0,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder( // Default border when not focused
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: Colors.grey,
+                  width: 2.0,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+
+  Widget _buildPage2() {
+    int initialIndex = selectedAge - 1;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 24),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text(
+                "How Old Are You?",
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8),
+              Text(
+                "Your age helps us estimate your daily calorie and nutrient needs.",
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: Center(
+            child: SizedBox(
+              height: 250,
+              child: ListWheelScrollView.useDelegate(
+                itemExtent: 60,
+                controller: FixedExtentScrollController(initialItem: initialIndex),
+                onSelectedItemChanged: (value) => setState(() => selectedAge = value + 1),
+                childDelegate: ListWheelChildBuilderDelegate(
+                  builder: (context, index) {
+                    final age = index + 1;
+                    return Center(
+                      child: Text(
+                        "$age",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: selectedAge == age ? FontWeight.bold : FontWeight.normal,
+                          color: selectedAge == age ? Colors.red : Colors.grey,
+                        ),
+                      ),
+                    );
+                  },
+                  childCount: 120,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPage3() => _buildQuestionPage(
+    title: "What is Your Gender?",
+    caption: "This helps us better tailor your recommendations.",
+    child: Column(
+      children: [
+        _buildGenderOption("Male", "assets/male_icon.png", Colors.blue),
+        const SizedBox(height: 16),
+        _buildGenderOption("Female", "assets/female_icon.png", Colors.pink),
+      ],
+    ),
+  );
+
   Widget _buildPage4() {
     int initialIndex = (selectedHeight - 100).toInt();
 
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 15),
-        const Text(
-          "What is Your Height?",
-          style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+        const SizedBox(height: 24),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text(
+                "What is Your Height?",
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8),
+              Text(
+                "Your height is important to calculate your BMI for health analysis.",
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+            ],
+          ),
         ),
         Expanded(
-          child: ListWheelScrollView.useDelegate(
-            itemExtent: 60,
-            perspective: 0.005,
-            diameterRatio: 1.2,
-            physics: const FixedExtentScrollPhysics(),
-            controller: FixedExtentScrollController(initialItem: initialIndex),
-            onSelectedItemChanged: (value) {
-              setState(() => selectedHeight = 100 + value.toDouble());
-            },
-            childDelegate: ListWheelChildBuilderDelegate(
-              builder: (context, index) {
-                final height = 100 + index;
-                return Center(
-                  child: Text(
-                    "$height cm",
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: selectedHeight.toInt() == height ? FontWeight.bold : FontWeight.normal,
-                      color: selectedHeight.toInt() == height ? Colors.red : Colors.grey,
-                    ),
-                  ),
-                );
-              },
-              childCount: 121,
+          child: Center(
+            child: SizedBox(
+              height: 250,
+              child: ListWheelScrollView.useDelegate(
+                itemExtent: 60,
+                controller: FixedExtentScrollController(initialItem: initialIndex),
+                onSelectedItemChanged: (value) =>
+                    setState(() => selectedHeight = 100 + value.toDouble()),
+                childDelegate: ListWheelChildBuilderDelegate(
+                  builder: (context, index) {
+                    final height = 100 + index;
+                    return Center(
+                      child: Text(
+                        "$height cm",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: selectedHeight.toInt() == height
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: selectedHeight.toInt() == height
+                              ? Colors.red
+                              : Colors.grey,
+                        ),
+                      ),
+                    );
+                  },
+                  childCount: 121,
+                ),
+              ),
             ),
           ),
         ),
@@ -526,38 +674,56 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     int initialIndex = (selectedWeight - 30).toInt();
 
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 15),
-        const Text(
-          "What is Your Weight?",
-          style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+        const SizedBox(height: 24),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text(
+                "What is Your Weight?",
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8),
+              Text(
+                "Your weight is important to calculate your BMI for health analysis.",
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+            ],
+          ),
         ),
         Expanded(
-          child: ListWheelScrollView.useDelegate(
-            itemExtent: 60,
-            perspective: 0.005,
-            diameterRatio: 1.2,
-            physics: const FixedExtentScrollPhysics(),
-            controller: FixedExtentScrollController(initialItem: initialIndex),
-            onSelectedItemChanged: (value) {
-              setState(() => selectedWeight = 30 + value.toDouble());
-            },
-            childDelegate: ListWheelChildBuilderDelegate(
-              builder: (context, index) {
-                final weight = 30 + index;
-                return Center(
-                  child: Text(
-                    "$weight kg",
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: selectedWeight.toInt() == weight ? FontWeight.bold : FontWeight.normal,
-                      color: selectedWeight.toInt() == weight ? Colors.red : Colors.grey,
-                    ),
-                  ),
-                );
-              },
-              childCount: 121,
+          child: Center(
+            child: SizedBox(
+              height: 250,
+              child: ListWheelScrollView.useDelegate(
+                itemExtent: 60,
+                controller: FixedExtentScrollController(initialItem: initialIndex),
+                onSelectedItemChanged: (value) =>
+                    setState(() => selectedWeight = 30 + value.toDouble()),
+                childDelegate: ListWheelChildBuilderDelegate(
+                  builder: (context, index) {
+                    final weight = 30 + index;
+                    return Center(
+                      child: Text(
+                        "$weight kg",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: selectedWeight.toInt() == weight
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: selectedWeight.toInt() == weight
+                              ? Colors.red
+                              : Colors.grey,
+                        ),
+                      ),
+                    );
+                  },
+                  childCount: 121,
+                ),
+              ),
             ),
           ),
         ),
@@ -565,229 +731,108 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     );
   }
 
+  Widget _buildPage6() => _buildQuestionPage(
+    title: "What is Your Level of Activity?",
+    caption: "We use this to estimate your daily calorie burn.",
+    child: Column(
+      children: [
+        _buildActivityOption("Sedentary", "Little or no exercise, mostly sitting."),
+        _buildActivityOption("Lightly Active", "Light exercise 1-3 days per week."),
+        _buildActivityOption("Moderately Active", "Moderate exercise 3-5 days per week."),
+        _buildActivityOption("Active", "Hard exercise 6-7 days per week."),
+        _buildActivityOption("Very Active", "Very intense daily exercise or physical job."),
+      ],
+    ),
+  );
 
-  Widget _buildPage6() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "What is Your Level of Activity?",
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 15),
-          _buildActivityOption("Sedentary", "Little or no exercise, mostly sitting."),
-          _buildActivityOption("Lightly Active", "Light exercise 1-3 days per week."),
-          _buildActivityOption("Moderately Active", "Moderate exercise 3-5 days per week."),
-          _buildActivityOption("Active", "Hard exercise 6-7 days per week."),
-          _buildActivityOption("Very Active", "Very intense daily exercise or physical job."),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPage7() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          CustomInputField(
-            controller: _cholesterolController,
-            labelText: "What is Your Cholesterol Level?",
-            labelText1: "Enter your cholesterol level (mg/dl)",
-            keyboardType: TextInputType.number,
-          ),
-          CustomInputField(
-            controller: _systolicBPController,
-            labelText: "What is Your Systolic Blood Pressure?",
-            labelText1: "Enter your systolic blood pressure (mmHg)",
-            keyboardType: TextInputType.number,
-          ),
-          CustomInputField(
-            controller: _diastolicBPController,
-            labelText: "What is Your Diastolic Blood Pressure?",
-            labelText1: "Enter your diastolic blood pressure (mmHg)",
-            keyboardType: TextInputType.number,
-          ),
-          CustomInputField(
-            controller: _bloodGlucoseController,
-            labelText: "What is Your Blood Glucose Level?",
-            labelText1: "Enter your blood glucose level (mg/dl)",
-            keyboardType: TextInputType.number,
-          ),
-          CustomInputField(
-            controller: _heartRateController,
-            labelText: "What is Your Resting Heart Rate?",
-            labelText1: "Enter your resting heart rate (bpm)",
-            keyboardType: TextInputType.number,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPage8() {
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onTap: _dismissTooltip,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Do You Have Any Dietary Preference(s)?",
-              style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              "Describe in your own words:",
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _freePreferenceController,
-              style: const TextStyle(fontSize: 16.0),
-              decoration: InputDecoration(
-                hintText: "e.g., I prefer dairy-free dishes or meals that contain salmon.",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-              ),
-              maxLines: null,
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              "Or select from the list below:",
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 8),
-            _buildCheckbox("None"),
-            _buildCheckbox("Dairy-Free", infoText: "Dairy-free diets exclude milk, cheese, yogurt, and other dairy products. Suitable for people with lactose intolerance or dairy allergies."),
-            _buildCheckbox("Gluten-Free", infoText: "Gluten-free diets exclude wheat, barley, rye, and other gluten-containing foods. Important for people with celiac disease or gluten sensitivity."),
-            _buildCheckbox("High-Fiber"),
-            _buildCheckbox("High-Protein"),
-            _buildCheckbox("Low-Calorie"),
-            _buildCheckbox("Low-Carb"),
-            _buildCheckbox("Low-Fat"),
-            _buildCheckbox("Low-Sugar"),
-            _buildCheckbox("Vegan", infoText: "Vegan diets exclude all animal products including meat, dairy, eggs, and honey. Suitable for those following a plant-based lifestyle.",),
-            _buildCheckbox("Vegetarian", infoText: "Vegetarian diets exclude meat and fish but may include dairy and eggs. Ideal for those avoiding meat but not all animal products.",
-            ),
-          ],
+  Widget _buildPage7() => _buildQuestionPage(
+    title: "Tell Us About Your Health",
+    caption: "These values help us assess your heart health and set nutrition goals for your personalise recommendations.",
+    child: Column(
+      children: [
+        CustomInputField(
+          controller: _cholesterolController,
+          labelText: "Cholesterol Level",
+          labelText1: "Enter your cholesterol (mg/dl)",
+          keyboardType: TextInputType.number,
         ),
-      ),
-    );
-  }
+        CustomInputField(
+          controller: _systolicBPController,
+          labelText: "Systolic Blood Pressure",
+          labelText1: "Enter your systolic BP (mmHg)",
+          keyboardType: TextInputType.number,
+        ),
+        CustomInputField(
+          controller: _diastolicBPController,
+          labelText: "Diastolic Blood Pressure",
+          labelText1: "Enter your diastolic BP (mmHg)",
+          keyboardType: TextInputType.number,
+        ),
+        CustomInputField(
+          controller: _bloodGlucoseController,
+          labelText: "Blood Glucose Level",
+          labelText1: "Enter your glucose (mg/dl)",
+          keyboardType: TextInputType.number,
+        ),
+        CustomInputField(
+          controller: _heartRateController,
+          labelText: "Resting Heart Rate",
+          labelText1: "Enter your resting heart rate (bpm)",
+          keyboardType: TextInputType.number,
+        ),
+      ],
+    ),
+  );
 
-  // ======== ACTIVITY RADIO TILES ========
-  Widget _buildActivityOption(String title, String description) {
-    return RadioListTile<String>(
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-          const SizedBox(height: 4),
-          Text(description, style: const TextStyle(fontSize: 14, color: Colors.black54)),
-        ],
-      ),
-      value: title,
-      groupValue: _selectedActivityLevel,
-      activeColor: Colors.red,
-      onChanged: (String? value) {
-        if (value != null) {
-          setState(() => _selectedActivityLevel = value);
-        }
-      },
-      contentPadding: const EdgeInsets.symmetric(vertical: 2),
-    );
-  }
-
-  Widget _buildCheckbox(String title, {String? infoText}) {
-    final GlobalKey iconKey = GlobalKey();
-
-    void _showTooltip() {
-      final renderBox = iconKey.currentContext?.findRenderObject() as RenderBox?;
-      final overlay = Overlay.of(context).context.findRenderObject() as RenderBox?;
-      if (renderBox == null || overlay == null) return;
-
-      final position = renderBox.localToGlobal(Offset.zero, ancestor: overlay);
-
-      _dismissTooltip(); // hide any previous tooltip
-
-      _activeTooltip = OverlayEntry(
-        builder: (context) => Positioned(
-          left: position.dx,
-          top: position.dy + renderBox.size.height + 5,
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              margin: const EdgeInsets.only(top: 4),
-              constraints: const BoxConstraints(maxWidth: 260),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 8,
-                    offset: Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Text(
-                infoText ?? "",
-                style: const TextStyle(fontSize: 13),
-              ),
+  Widget _buildPage8() => _buildQuestionPage(
+    title: "Do You Have Any Dietary Preference(s)?",
+    caption: "We use this to recommend recipes that match your preferences and dietary needs.",
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Describe in your own words:",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _freePreferenceController,
+          maxLines: null,
+          decoration: InputDecoration(
+            hintText: "e.g., I prefer dairy-free dishes or meals that contain salmon.",
+            hintStyle: TextStyle(color: Colors.grey.shade500),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey),
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.red, width: 2.0),
+              borderRadius: BorderRadius.circular(8.0),
             ),
           ),
         ),
-      );
+        const SizedBox(height: 20),
+        const Text(
+          "Or select from the list below:",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(height: 12),
+        _buildCheckbox("None"),
+        _buildCheckbox("Dairy-Free"),
+        _buildCheckbox("Gluten-Free"),
+        _buildCheckbox("High-Fiber"),
+        _buildCheckbox("High-Protein"),
+        _buildCheckbox("Low-Calorie"),
+        _buildCheckbox("Low-Carb"),
+        _buildCheckbox("Low-Fat"),
+        _buildCheckbox("Low-Sugar"),
+        _buildCheckbox("Vegan"),
+        _buildCheckbox("Vegetarian"),
+      ],
+    ),
+  );
 
-      Overlay.of(context).insert(_activeTooltip!);
-    }
 
-    void _toggleTooltip() {
-      if (_activeTooltip != null) {
-        _dismissTooltip();
-      } else {
-        _showTooltip();
-      }
-    }
-
-    return CheckboxListTile(
-      controlAffinity: ListTileControlAffinity.trailing,
-      title: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(title),
-          if (infoText != null) ...[
-            const SizedBox(width: 6),
-            GestureDetector(
-              key: iconKey,
-              onTap: _toggleTooltip,
-              child: const Icon(
-                Icons.info_outline,
-                size: 20,
-                color: Colors.red,
-              ),
-            ),
-          ],
-        ],
-      ),
-      value: _selectedDietaryPreferences.contains(title),
-      onChanged: (bool? value) {
-        setState(() {
-          _toggleDietaryPreference(title);
-          _dismissTooltip();
-        });
-      },
-    );
-  }
-
-  // ======== MAIN BUILD ========
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -801,14 +846,8 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                 controller: _pageController,
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
-                  _buildPage1(),
-                  _buildPage2(),
-                  _buildPage3(),
-                  _buildPage4(),
-                  _buildPage5(),
-                  _buildPage6(),
-                  _buildPage7(),
-                  _buildPage8(),
+                  _buildPage1(), _buildPage2(), _buildPage3(), _buildPage4(),
+                  _buildPage5(), _buildPage6(), _buildPage7(), _buildPage8(),
                 ],
               ),
             ),
@@ -819,3 +858,4 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     );
   }
 }
+

@@ -44,9 +44,6 @@ class _DashboardPageState extends State<DashboardPage> {
   //   "HeartRate": Color(0xFFE3B23C),     // goldenOcher
   // };
 
-
-
-
   Map<String, List<FlSpot>> healthData = {
     "Cholesterol": [],
     "SystolicBP": [],
@@ -408,7 +405,15 @@ class _DashboardPageState extends State<DashboardPage> {
                         strokeWidth: 1,
                       ),
                     ),
-                    borderData: FlBorderData(show: false),
+                    borderData: FlBorderData(
+                      show: true,
+                      border: Border(
+                        left: BorderSide(color: Colors.grey, width: 1),  // Y-axis line
+                        bottom: BorderSide(color: Colors.grey, width: 1), // X-axis line
+                        top: BorderSide(color: Colors.transparent),          // hide top
+                        right: BorderSide(color: Colors.transparent),        // hide right
+                      ),
+                    ),
                     titlesData: FlTitlesData(
                       leftTitles: AxisTitles(
                         sideTitles: SideTitles(
